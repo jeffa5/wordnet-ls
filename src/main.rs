@@ -119,11 +119,12 @@ impl Dict {
 
 fn get_word(tdp: lsp_types::TextDocumentPositionParams) -> Option<String> {
     let file = std::fs::File::open(tdp.text_document.uri.to_file_path().unwrap()).unwrap();
-    let mut reader = std::io::BufReader::new(file);
-    let mut line = String::new();
-    for _ in 0..=tdp.position.line {
-        reader.read_line(&mut line).unwrap();
-    }
+    let reader = std::io::BufReader::new(file);
+    let line = reader
+        .lines()
+        .nth(tdp.position.line as usize)
+        .unwrap()
+        .unwrap();
     let words: Vec<_> = line.split_whitespace().collect();
     let mut x = 0;
     for w in words {
