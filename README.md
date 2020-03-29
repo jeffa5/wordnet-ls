@@ -15,3 +15,23 @@ a dictionary for support.
 - [ ] linting for spelling
 - [ ] some way of doing synonyms and other things
 - [ ] completion for words
+
+## Installation
+
+Currently, the main way to install LLS is by cloning the repo and running
+
+```sh
+cargo install --path . --force
+```
+
+or
+
+```sh
+make install
+```
+
+This adds the binary `lls` to the rust bin location.
+
+## Configuration
+
+Configuration is editor dependent so please see instructions for your editor.
