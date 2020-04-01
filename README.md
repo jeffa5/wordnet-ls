@@ -9,7 +9,7 @@ Language servers are commonly used for programming languages but why not
 natural language too?
 
 This project aims to provide an example of a language server for English, using
-a dictionary for support.
+wordnet for support.
 
 ## Actions
 
@@ -36,4 +36,20 @@ This adds the binary `lls` to the rust bin location.
 
 ## Configuration
 
-Configuration is editor dependent so please see instructions for your editor.
+You'll need to download a copy of
+[wordnet](https://wordnet.princeton.edu/download/current-version). The tested
+version is 3.1.
+
+To configure the location of the wordnet dictionary set the `initializationOptions` as:
+
+```json
+{
+  "wordnet": "<location>",
+}
+```
+
+Home dir should get expanded if needed.
+
+## WordNet
+
+For more information about the WordNet database see [here](https://wordnet.princeton.edu/).
