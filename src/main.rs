@@ -1,7 +1,13 @@
 use lls_lib::wordnet;
 use lls_lib::wordnet::WordNet;
+use lsp_server::ErrorCode;
+use lsp_server::Message;
+use lsp_server::Notification;
+use lsp_server::Response;
+use lsp_server::ResponseError;
 use lsp_server::{Connection, IoThreads};
 use lsp_types::request::Request;
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::io::BufRead;
 use std::path::Path;
@@ -55,14 +61,14 @@ impl Server {
     fn serve(mut self, c: Connection, io: IoThreads) -> Result<(), String> {
         loop {
             match c.receiver.recv().unwrap() {
-                lsp_server::Message::Request(r) => {
+                Message::Request(r) => {
                     if self.shutdown {
                         c.sender
-                            .send(lsp_server::Message::Response(lsp_server::Response {
+                            .send(Message::Response(Response {
                                 id: r.id,
                                 result: None,
-                                error: Some(lsp_server::ResponseError {
-                                    code: lsp_server::ErrorCode::InvalidRequest as i32,
+                                error: Some(ResponseError {
+                                    code: ErrorCode::InvalidRequest as i32,
                                     message: String::from("received request after shutdown"),
                                     data: None,
                                 }),
@@ -91,13 +97,13 @@ impl Server {
                                         ),
                                         range: None,
                                     };
-                                    lsp_server::Message::Response(lsp_server::Response {
+                                    Message::Response(Response {
                                         id: r.id,
                                         result: Some(serde_json::to_value(resp).unwrap()),
                                         error: None,
                                     })
                                 }
-                                None => lsp_server::Message::Response(lsp_server::Response {
+                                None => Message::Response(Response {
                                     id: r.id,
                                     result: None,
                                     error: None,
@@ -110,32 +116,26 @@ impl Server {
                             self.shutdown = true;
                             let none: Option<()> = None;
                             c.sender
-                                .send(lsp_server::Message::Response(lsp_server::Response::new_ok(
-                                    r.id, none,
-                                )))
+                                .send(Message::Response(Response::new_ok(r.id, none)))
                                 .unwrap()
                         }
                         _ => c
                             .sender
-                            .send(lsp_server::Message::Notification(
-                                lsp_server::Notification::new(
-                                    "window/logMessage".to_string(),
-                                    format!("Unmatched request received: {}", r.method),
-                                ),
-                            ))
+                            .send(Message::Notification(Notification::new(
+                                "window/logMessage".to_string(),
+                                format!("Unmatched request received: {}", r.method),
+                            )))
                             .unwrap(),
                     }
                 }
-                lsp_server::Message::Response(r) => c
+                Message::Response(r) => c
                     .sender
-                    .send(lsp_server::Message::Notification(
-                        lsp_server::Notification::new(
-                            "window/logMessage".to_string(),
-                            format!("Unmatched response received: {}", r.id),
-                        ),
-                    ))
+                    .send(Message::Notification(Notification::new(
+                        "window/logMessage".to_string(),
+                        format!("Unmatched response received: {}", r.id),
+                    )))
                     .unwrap(),
-                lsp_server::Message::Notification(n) => match &n.method[..] {
+                Message::Notification(n) => match &n.method[..] {
                     "exit" => {
                         if self.shutdown {
                             return Ok(());
@@ -147,12 +147,10 @@ impl Server {
                     }
                     _ => c
                         .sender
-                        .send(lsp_server::Message::Notification(
-                            lsp_server::Notification::new(
-                                "window/logMessage".to_string(),
-                                format!("Unmatched notification received: {}", n.method),
-                            ),
-                        ))
+                        .send(Message::Notification(Notification::new(
+                            "window/logMessage".to_string(),
+                            format!("Unmatched notification received: {}", n.method),
+                        )))
                         .unwrap(),
                 },
             }
@@ -188,7 +186,7 @@ impl DictItem {
         let mut blocks = Vec::new();
         blocks.push(format!("# {}", word));
 
-        let mut defs = HashMap::new();
+        let mut defs = BTreeMap::new();
         for d in self.definitions.iter() {
             match defs.get_mut(&d.pos) {
                 None => {

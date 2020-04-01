@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// PoS represents a part of speech
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum PoS {
     Noun,
     Verb,
