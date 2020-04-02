@@ -58,7 +58,7 @@ impl Server {
         }
     }
 
-    fn serve(mut self, c: Connection, io: IoThreads) -> Result<(), String> {
+    fn serve(mut self, c: Connection) -> Result<(), String> {
         loop {
             match c.receiver.recv().unwrap() {
                 Message::Request(r) => {
@@ -155,15 +155,15 @@ impl Server {
                 },
             }
         }
-
-        // io.join().unwrap();
     }
 }
 
 fn main() {
     let (p, c, io) = connect();
     let server = Server::new(p);
-    match server.serve(c, io) {
+    let s = server.serve(c);
+    io.join().unwrap();
+    match s {
         Ok(()) => (),
         Err(s) => {
             eprintln!("{}", s);
