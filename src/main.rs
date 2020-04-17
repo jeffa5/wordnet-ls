@@ -256,13 +256,32 @@ fn get_word(tdp: lsp_types::TextDocumentPositionParams) -> Option<String> {
             Ok(l) => l,
         },
     };
-    let words: Vec<_> = line.split_whitespace().collect();
-    let mut x = 0;
-    for w in words {
-        if x <= tdp.position.character as usize && x + w.len() > tdp.position.character as usize {
-            return Some(w.to_string());
+
+    let mut current_word = String::new();
+    let mut found = false;
+    for (i, c) in line.chars().enumerate() {
+        if c.is_alphabetic() {
+            current_word.push(c)
+        } else {
+            if found {
+                return Some(current_word);
+            }
+            current_word = String::new()
         }
-        x += w.len() + 1;
+
+        if i == tdp.position.character as usize {
+            found = true
+        }
+
+        if !c.is_alphabetic() && found {
+            return Some(current_word);
+        }
     }
-    return None;
+
+    // got to end of line
+    if found {
+        return Some(current_word);
+    }
+
+    None
 }
