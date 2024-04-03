@@ -248,7 +248,7 @@ fn get_word(tdp: lsp_types::TextDocumentPositionParams) -> Option<String> {
     let mut found = false;
     for (i, c) in line.chars().enumerate() {
         if c.is_alphabetic() {
-            current_word.push(c)
+            current_word.push_str(&c.to_lowercase().collect::<String>())
         } else {
             if found {
                 return Some(current_word);
