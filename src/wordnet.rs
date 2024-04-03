@@ -1,8 +1,13 @@
-use super::data::Data;
-use super::index::Index;
-use super::pos::PoS;
+use data::Data;
+use index::Index;
+use pos::PoS;
 use std::collections::HashSet;
 use std::path::PathBuf;
+
+mod data;
+mod index;
+mod pos;
+mod synset;
 
 pub struct WordNet {
     index: Index,
