@@ -1,6 +1,5 @@
+use super::pointer::PointerType;
 use super::pos::PartOfSpeech;
-use super::synset::SynSetType;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -9,40 +8,22 @@ use std::io::SeekFrom;
 use std::path::Path;
 
 #[derive(Default, Debug)]
-pub struct Data {
-    /// Map from lemma to list of items which may be different
-    items: HashMap<u64, Vec<DataItem>>,
-}
+pub struct Data;
 
 #[derive(Debug, Clone)]
 pub struct DataItem {
-    synset_type: SynSetType,
     pub words: Vec<String>,
+    pub relationships: Vec<(PointerType, u64, PartOfSpeech)>,
     pub gloss: String,
 }
 
 impl Data {
-    pub fn new() -> Self {
-        Self {
-            items: HashMap::new(),
+    pub fn load(&self, dir: &Path, offset: u64, pos: PartOfSpeech) -> Vec<DataItem> {
+        let mut items = Vec::new();
+        if let Some(i) = self.search(dir, pos, offset) {
+            items.push(i)
         }
-    }
-
-    pub fn load(&mut self, dir: &Path, o: u64, pos: PartOfSpeech) -> Vec<DataItem> {
-        let item = self.items.get(&o);
-        match item {
-            Some(di) => di.clone(),
-            None => {
-                let mut items = Vec::new();
-
-                if let Some(i) = self.search(dir, pos, o) {
-                    items.push(i)
-                }
-
-                self.items.insert(o, items);
-                self.items.get(&o).unwrap().clone()
-            }
-        }
+        items
     }
 
     fn search(&self, dir: &Path, pos: PartOfSpeech, offset: u64) -> Option<DataItem> {
@@ -83,6 +64,20 @@ impl DataItem {
                 match &rest[..] {
                     [p_cnt, rest @ ..] => {
                         let p_cnt = p_cnt.parse::<usize>().unwrap();
+                        let pointers = rest.iter().take(p_cnt * 4).collect::<Vec<_>>();
+                        let mut relationships = Vec::new();
+                        for chunk in pointers.chunks(4) {
+                            let [pointer_symbol, synset_offset, part_of_speech, _source_target] =
+                                chunk
+                            else {
+                                panic!("invalid chunk")
+                            };
+                            let pointer_type = PointerType::try_from_str(pointer_symbol).unwrap();
+                            let synset_offset = synset_offset.parse::<u64>().unwrap();
+                            let part_of_speech =
+                                PartOfSpeech::try_from_str(part_of_speech).unwrap();
+                            relationships.push((pointer_type, synset_offset, part_of_speech));
+                        }
                         let rest: Vec<_> = rest.iter().skip(p_cnt * 4).collect();
                         let gloss = rest
                             .iter()
@@ -93,8 +88,8 @@ impl DataItem {
                             .trim()
                             .to_string();
                         Some(Self {
-                            synset_type: SynSetType::Noun,
                             words,
+                            relationships,
                             gloss,
                         })
                     }

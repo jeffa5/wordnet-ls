@@ -1,15 +1,11 @@
 use super::pos::PartOfSpeech;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::Path;
 
 #[derive(Default, Debug)]
-pub struct Index {
-    /// Map from lemma to list of items which may be different
-    items: HashMap<String, Vec<IndexItem>>,
-}
+pub struct Index;
 
 #[derive(Debug)]
 pub struct IndexItem {
@@ -18,13 +14,7 @@ pub struct IndexItem {
 }
 
 impl Index {
-    pub fn new() -> Self {
-        Self {
-            items: HashMap::new(),
-        }
-    }
-
-    pub fn load(&mut self, dir: &Path, word: &str) -> &[IndexItem] {
+    pub fn load(&self, dir: &Path, word: &str) -> Vec<IndexItem> {
         let mut items = Vec::new();
 
         for pos in [
@@ -38,8 +28,7 @@ impl Index {
             }
         }
 
-        self.items.insert(word.to_string(), items);
-        self.items.get(word).unwrap()
+        items
     }
 
     fn search(&self, dir: &Path, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
