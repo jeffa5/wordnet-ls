@@ -55,7 +55,7 @@ impl Data {
         };
 
         if file.seek(SeekFrom::Start(offset)).is_err() {
-            return None
+            return None;
         };
 
         let mut reader = BufReader::new(file);

@@ -1,4 +1,5 @@
 use lls_lib::wordnet;
+use lls_lib::wordnet::Synonyms;
 use lls_lib::wordnet::WordNet;
 use lsp_server::ErrorCode;
 use lsp_server::Message;
@@ -176,7 +177,7 @@ struct Dict {
 
 struct DictItem {
     definitions: Vec<wordnet::Definition>,
-    synonyms: Vec<String>,
+    synonyms: Vec<Synonyms>,
 }
 
 impl DictItem {
@@ -198,17 +199,19 @@ impl DictItem {
                     .collect::<Vec<String>>()
                     .join("\n"),
             );
-            blocks.push(s)
-        }
+            blocks.push(s);
 
-        let syns = self
-            .synonyms
-            .iter()
-            .map(|x| x.replace('_', " "))
-            .collect::<Vec<String>>()
-            .join(", ");
-        if !syns.is_empty() {
-            blocks.push(format!("**Synonyms**: {syns}"));
+            if let Some(syns) = self.synonyms.iter().find(|s| s.pos == pos) {
+                let syns = syns
+                    .synonyms
+                    .iter()
+                    .map(|x| x.replace('_', " "))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                if !syns.is_empty() {
+                    blocks.push(format!("**Synonyms**: {syns}"));
+                }
+            }
         }
 
         blocks.join("\n\n")

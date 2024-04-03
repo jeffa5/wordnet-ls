@@ -20,3 +20,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "lls"
 path = "src/main.rs"
+
+[dev-dependencies]
+expect-test = "1.5.0"
