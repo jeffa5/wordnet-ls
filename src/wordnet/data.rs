@@ -1,5 +1,7 @@
 use super::pointer::PointerType;
 use super::pos::PartOfSpeech;
+use super::synset::Relationship;
+use super::synset::SynSet;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -10,30 +12,13 @@ use std::path::Path;
 #[derive(Default, Debug)]
 pub struct Data;
 
-#[derive(Debug, Clone)]
-pub struct DataItem {
-    pub words: Vec<String>,
-    pub relationships: Vec<(PointerType, u64, PartOfSpeech)>,
-    pub gloss: String,
-}
-
 impl Data {
-    pub fn load(&self, dir: &Path, offset: u64, pos: PartOfSpeech) -> Vec<DataItem> {
-        let mut items = Vec::new();
-        if let Some(i) = self.search(dir, pos, offset) {
-            items.push(i)
-        }
-        items
-    }
-
-    fn search(&self, dir: &Path, pos: PartOfSpeech, offset: u64) -> Option<DataItem> {
+    /// Load a synset from the given offset in a particular part of speech file.
+    pub(super) fn load(&self, dir: &Path, offset: u64, pos: PartOfSpeech) -> Option<SynSet> {
         // do a binary search later
         // for now just linear
         let p = dir.join("data").with_extension(pos.as_suffix());
-        let mut file = match File::open(p) {
-            Ok(file) => file,
-            Err(_) => return None,
-        };
+        let mut file = File::open(p).ok()?;
 
         if file.seek(SeekFrom::Start(offset)).is_err() {
             return None;
@@ -44,14 +29,14 @@ impl Data {
         reader.read_line(&mut line).unwrap();
 
         let parts: Vec<_> = line.split_whitespace().collect();
-        Some(DataItem::from_parts(&parts).unwrap())
+        Some(SynSet::from_parts(&parts).unwrap())
     }
 }
 
-impl DataItem {
+impl SynSet {
     pub fn from_parts(ps: &[&str]) -> Option<Self> {
         match ps {
-            [_synset_offset, _lex_filenum, _ss_type, w_cnt, rest @ ..] => {
+            [_synset_offset, _lex_filenum, ss_type, w_cnt, rest @ ..] => {
                 let w_cnt = usize::from_str_radix(w_cnt, 16).unwrap();
                 let word_lex_id = &rest[..w_cnt * 2];
                 let mut words = Vec::new();
@@ -76,7 +61,11 @@ impl DataItem {
                             let synset_offset = synset_offset.parse::<u64>().unwrap();
                             let part_of_speech =
                                 PartOfSpeech::try_from_str(part_of_speech).unwrap();
-                            relationships.push((pointer_type, synset_offset, part_of_speech));
+                            relationships.push(Relationship {
+                                relation: pointer_type,
+                                synset_offset,
+                                part_of_speech,
+                            });
                         }
                         let rest: Vec<_> = rest.iter().skip(p_cnt * 4).collect();
                         let gloss = rest
@@ -90,7 +79,8 @@ impl DataItem {
                         Some(Self {
                             words,
                             relationships,
-                            gloss,
+                            definition: gloss,
+                            part_of_speech: PartOfSpeech::try_from_str(ss_type).unwrap(),
                         })
                     }
                     _ => None,

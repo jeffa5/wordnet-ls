@@ -6,12 +6,13 @@ use std::{
     path::PathBuf,
 };
 
-use self::pointer::PointerType;
+use self::{pointer::PointerType, synset::SynSet};
 
 mod data;
 mod index;
 mod pointer;
 mod pos;
+mod synset;
 
 pub struct WordNet {
     index: Index,
@@ -38,7 +39,7 @@ impl WordNet {
                 let items = self.data.load(&self.database, *o, i.pos);
                 defs.entry(i.pos)
                     .or_default()
-                    .extend(items.iter().map(|x| x.gloss.clone()))
+                    .extend(items.iter().map(|x| x.definition.clone()))
             }
         }
         defs
@@ -74,26 +75,26 @@ impl WordNet {
     ) -> BTreeMap<PartOfSpeech, BTreeSet<String>> {
         let word = word.to_lowercase();
         let items = self.index.load(&self.database, &word);
-        let mut antonyms: BTreeMap<PartOfSpeech, BTreeSet<String>> = BTreeMap::new();
+        let mut filtered: BTreeMap<PartOfSpeech, BTreeSet<String>> = BTreeMap::new();
 
         for item in items {
             for offset in item.syn_offsets.iter() {
-                antonyms.entry(item.pos).or_default().extend(
+                filtered.entry(item.pos).or_default().extend(
                     self.data
                         .load(&self.database, *offset, item.pos)
                         .iter()
                         .flat_map(|x| {
                             x.relationships
                                 .iter()
-                                .filter(|r| r.0 == relationship)
-                                .flat_map(|r| self.data.load(&self.database, r.1, r.2))
+                                .filter(|r| r.relation == relationship)
+                                .flat_map(|r| self.data.load(&self.database, r.synset_offset, r.part_of_speech))
                                 .flat_map(|di| di.words)
                         }),
                 );
             }
         }
 
-        antonyms
+        filtered
     }
 
     pub fn synsets(&self, word: &str) -> Vec<SynSet> {
@@ -103,53 +104,15 @@ impl WordNet {
 
         for item in items {
             for offset in item.syn_offsets.iter() {
-                let dataitems = self.data.load(&self.database, *offset, item.pos);
-                for synset in dataitems {
-                    let full_synset = SynSet {
-                        words: synset.words,
-                        definition: synset.gloss,
-                        part_of_speech: item.pos,
-                        relationships: synset
-                            .relationships
-                            .into_iter()
-                            .map(|r| Relationship {
-                                relationship_kind: r.0,
-                                words: self
-                                    .data
-                                    .load(&self.database, r.1, r.2)
-                                    .iter()
-                                    .flat_map(|di| di.words.clone())
-                                    .collect(),
-                                part_of_speech: r.2,
-                            })
-                            .collect(),
-                    };
-                    synsets.push(full_synset);
+                let synset = self.data.load(&self.database, *offset, item.pos);
+                if let Some(synset) = synset {
+                    synsets.push(synset);
                 }
             }
         }
 
         synsets
     }
-}
-
-#[derive(Debug)]
-pub struct SynSet {
-    /// The words for the synset.
-    pub words: Vec<String>,
-    /// Glossary entry.
-    pub definition: String,
-    /// What type of word it is.
-    pub part_of_speech: PartOfSpeech,
-    /// How it relates to other words.
-    pub relationships: Vec<Relationship>,
-}
-
-#[derive(Debug)]
-pub struct Relationship {
-    pub relationship_kind: PointerType,
-    pub words: Vec<String>,
-    pub part_of_speech: PartOfSpeech,
 }
 
 #[cfg(test)]
@@ -340,561 +303,348 @@ mod tests {
                     part_of_speech: Noun,
                     relationships: [
                         Relationship {
-                            relationship_kind: Hypernym,
-                            words: [
-                                "female",
-                                "female_person",
-                            ],
+                            relation: Hypernym,
+                            synset_offset: 9619168,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hypernym,
-                            words: [
-                                "adult",
-                                "grownup",
-                            ],
+                            relation: Hypernym,
+                            synset_offset: 9605289,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "womanly",
-                                "feminine",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 1484987,
                             part_of_speech: Adjective,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "womanhood",
-                                "muliebrity",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 14425715,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "womanhood",
-                                "woman",
-                                "fair_sex",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 8477634,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "womanhood",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 606006,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "feminize",
-                                "feminise",
-                                "effeminize",
-                                "effeminise",
-                                "womanize",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 566322,
                             part_of_speech: Verb,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "philander",
-                                "womanize",
-                                "womanise",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 2590910,
                             part_of_speech: Verb,
                         },
                         Relationship {
-                            relationship_kind: Antonym,
-                            words: [
-                                "man",
-                                "adult_male",
-                            ],
+                            relation: Antonym,
+                            synset_offset: 10287213,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: PartMeronym,
-                            words: [
-                                "adult_female_body",
-                                "woman's_body",
-                            ],
+                            relation: PartMeronym,
+                            synset_offset: 5220126,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: InstanceHyponym,
-                            words: [
-                                "Eve",
-                            ],
+                            relation: InstanceHyponym,
+                            synset_offset: 9586743,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "Black_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9637339,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "white_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9641130,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "yellow_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9643670,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "amazon",
-                                "virago",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9787293,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "maenad",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9787390,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "bachelor_girl",
-                                "bachelorette",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9830080,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "baggage",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9832456,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "ball-buster",
-                                "ball-breaker",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9834258,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "B-girl",
-                                "bar_girl",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9852430,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "bluestocking",
-                                "bas_bleu",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9861599,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "bridesmaid",
-                                "maid_of_honor",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9874862,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "broad",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9875663,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "cat",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9900153,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "Cinderella",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9923263,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "coquette",
-                                "flirt",
-                                "vamp",
-                                "vamper",
-                                "minx",
-                                "tease",
-                                "prickteaser",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9965134,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "dame",
-                                "madam",
-                                "ma'am",
-                                "lady",
-                                "gentlewoman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9989290,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "debutante",
-                                "deb",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 9997834,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "divorcee",
-                                "grass_widow",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10020366,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "ex-wife",
-                                "ex",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10020533,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "dominatrix",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10024784,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "donna",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10025635,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "enchantress",
-                                "temptress",
-                                "siren",
-                                "Delilah",
-                                "femme_fatale",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10055410,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "eyeful",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10075063,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "geisha",
-                                "geisha_girl",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10122858,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "girl",
-                                "miss",
-                                "missy",
-                                "young_lady",
-                                "young_woman",
-                                "fille",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10129825,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "girl",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10130447,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "girlfriend",
-                                "girl",
-                                "lady_friend",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10130686,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "girlfriend",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10130877,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "gold_digger",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10136283,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "gravida",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10144838,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "heroine",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10173410,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "inamorata",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10202085,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "jezebel",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10222170,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "jilt",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10222259,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "lady",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10243137,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "maenad",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10280034,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "matriarch",
-                                "materfamilias",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10302576,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "matriarch",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10302700,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "matron",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10303186,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "mestiza",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10311661,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "mistress",
-                                "kept_woman",
-                                "fancy_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10323752,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "mother_figure",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10333044,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "nanny",
-                                "nursemaid",
-                                "nurse",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10345100,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "nullipara",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10366145,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "nymph",
-                                "houri",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10368528,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "nymphet",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10368624,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "old_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10377021,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "prostitute",
-                                "cocotte",
-                                "whore",
-                                "harlot",
-                                "bawd",
-                                "tart",
-                                "cyprian",
-                                "fancy_woman",
-                                "working_girl",
-                                "sporting_lady",
-                                "lady_of_pleasure",
-                                "woman_of_the_street",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10485440,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "shiksa",
-                                "shikse",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10589243,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "smasher",
-                                "stunner",
-                                "knockout",
-                                "beauty",
-                                "ravisher",
-                                "sweetheart",
-                                "peach",
-                                "lulu",
-                                "looker",
-                                "mantrap",
-                                "dish",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10613996,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "sylph",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10685398,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "unmarried_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10739512,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "vestal",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10748804,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "Wac",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10761962,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "Wave",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10771066,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "widow",
-                                "widow_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10780284,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "wife",
-                                "married_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10780632,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: Hyponym,
-                            words: [
-                                "wonder_woman",
-                            ],
+                            relation: Hyponym,
+                            synset_offset: 10789820,
                             part_of_speech: Noun,
                         },
                     ],
@@ -907,43 +657,28 @@ mod tests {
                     part_of_speech: Noun,
                     relationships: [
                         Relationship {
-                            relationship_kind: Hypernym,
-                            words: [
-                                "female",
-                                "female_person",
-                            ],
+                            relation: Hypernym,
+                            synset_offset: 9619168,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DomainOfSynsetUsage,
-                            words: [
-                                "colloquialism",
-                            ],
+                            relation: DomainOfSynsetUsage,
+                            synset_offset: 7075172,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "philander",
-                                "womanize",
-                                "womanise",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 2590910,
                             part_of_speech: Verb,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "philander",
-                                "womanize",
-                                "womanise",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 2590910,
                             part_of_speech: Verb,
                         },
                         Relationship {
-                            relationship_kind: Antonym,
-                            words: [
-                                "man",
-                            ],
+                            relation: Antonym,
+                            synset_offset: 10288516,
                             part_of_speech: Noun,
                         },
                     ],
@@ -960,10 +695,8 @@ mod tests {
                     part_of_speech: Noun,
                     relationships: [
                         Relationship {
-                            relationship_kind: Hypernym,
-                            words: [
-                                "cleaner",
-                            ],
+                            relation: Hypernym,
+                            synset_offset: 9927089,
                             part_of_speech: Noun,
                         },
                     ],
@@ -978,43 +711,28 @@ mod tests {
                     part_of_speech: Noun,
                     relationships: [
                         Relationship {
-                            relationship_kind: Hypernym,
-                            words: [
-                                "class",
-                                "stratum",
-                                "social_class",
-                                "socio-economic_class",
-                            ],
+                            relation: Hypernym,
+                            synset_offset: 7974025,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: MemberHolonym,
-                            words: [
-                                "womankind",
-                            ],
+                            relation: MemberHolonym,
+                            synset_offset: 8477912,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "womanhood",
-                                "muliebrity",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 14425715,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "womanhood",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 606006,
                             part_of_speech: Noun,
                         },
                         Relationship {
-                            relationship_kind: DerivationallyRelatedForm,
-                            words: [
-                                "woman",
-                                "adult_female",
-                            ],
+                            relation: DerivationallyRelatedForm,
+                            synset_offset: 10787470,
                             part_of_speech: Noun,
                         },
                     ],
