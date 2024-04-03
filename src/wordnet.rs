@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn multipos_data_definition() {
         let word = "run";
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let def = wn.definitions(word);
         let expected = expect![[r#"
@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn multipos_data_synonyms() {
         let word = "run";
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let syn = wn.synonyms(word);
         let expected = expect![[r#"
@@ -320,7 +320,7 @@ mod tests {
     #[test]
     fn woman_data_synset() {
         let word = "woman";
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let syn = wn.synsets(word);
         let expected = expect![[r#"
@@ -776,7 +776,7 @@ mod tests {
     #[test]
     fn woman_data_synset_resolve() {
         let word = "woman";
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let syn = wn.synsets(word);
         let resolved_related = syn
@@ -5638,7 +5638,7 @@ mod tests {
     #[test]
     fn woman_data_synonyms() {
         let word = "woman";
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let syn = wn.synonyms(word);
         let expected = expect![[r#"
@@ -5661,7 +5661,7 @@ mod tests {
     #[test]
     fn woman_data_antonyms() {
         let word = "woman";
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let syn = wn.antonyms(word);
         let expected = expect![[r#"
@@ -5677,7 +5677,7 @@ mod tests {
 
     #[test]
     fn all_words() {
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let len = wn.all_words().len();
         let expected = expect![[r#"
@@ -5688,7 +5688,7 @@ mod tests {
 
     #[test]
     fn all_words_cause() {
-        let wndir = env::var("WORDNET").unwrap();
+        let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
         let words = wn
             .all_words()
