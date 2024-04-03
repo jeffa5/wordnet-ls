@@ -229,6 +229,36 @@ rec {
         ];
 
       };
+      "dissimilar" = rec {
+        crateName = "dissimilar";
+        version = "1.0.7";
+        edition = "2018";
+        sha256 = "0cn6i035s4hsvv078lg3alsfwjy0k2y7zy5hnsr1cvpf1v4bvqw6";
+        authors = [
+          "David Tolnay <dtolnay@gmail.com>"
+        ];
+
+      };
+      "expect-test" = rec {
+        crateName = "expect-test";
+        version = "1.5.0";
+        edition = "2018";
+        sha256 = "1q55nrkgzg345905aqbsdrwlq4sk0gjn4z5bdph1an1kc6jy02wy";
+        authors = [
+          "rust-analyzer developers"
+        ];
+        dependencies = [
+          {
+            name = "dissimilar";
+            packageId = "dissimilar";
+          }
+          {
+            name = "once_cell";
+            packageId = "once_cell";
+          }
+        ];
+
+      };
       "getrandom" = rec {
         crateName = "getrandom";
         version = "0.2.12";
@@ -409,6 +439,12 @@ rec {
             packageId = "serde_json";
           }
         ];
+        devDependencies = [
+          {
+            name = "expect-test";
+            packageId = "expect-test";
+          }
+        ];
 
       };
       "log" = rec {
@@ -526,6 +562,25 @@ rec {
           "use_std" = [ "std" ];
         };
         resolvedDefaultFeatures = [ "alloc" "std" ];
+      };
+      "once_cell" = rec {
+        crateName = "once_cell";
+        version = "1.19.0";
+        edition = "2021";
+        sha256 = "14kvw7px5z96dk4dwdm1r9cqhhy2cyj1l5n5b29mynbb8yr15nrz";
+        authors = [
+          "Aleksey Kladov <aleksey.kladov@gmail.com>"
+        ];
+        features = {
+          "alloc" = [ "race" ];
+          "atomic-polyfill" = [ "critical-section" ];
+          "critical-section" = [ "dep:critical-section" "portable-atomic" ];
+          "default" = [ "std" ];
+          "parking_lot" = [ "dep:parking_lot_core" ];
+          "portable-atomic" = [ "dep:portable-atomic" ];
+          "std" = [ "alloc" ];
+        };
+        resolvedDefaultFeatures = [ "alloc" "default" "race" "std" ];
       };
       "option-ext" = rec {
         crateName = "option-ext";
