@@ -1,5 +1,4 @@
-use lls_lib::wordnet;
-use lls_lib::wordnet::Synonyms;
+use lls_lib::wordnet::PartOfSpeech;
 use lls_lib::wordnet::WordNet;
 use lsp_server::ErrorCode;
 use lsp_server::Message;
@@ -12,6 +11,7 @@ use lsp_types::notification::Notification as _;
 use lsp_types::request::Request;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::io::BufRead;
 use std::path::Path;
@@ -176,34 +176,35 @@ struct Dict {
 }
 
 struct DictItem {
-    definitions: Vec<wordnet::Definition>,
-    synonyms: Vec<Synonyms>,
+    definitions: BTreeMap<PartOfSpeech, BTreeSet<String>>,
+    synonyms: BTreeMap<PartOfSpeech, BTreeSet<String>>,
 }
 
 impl DictItem {
     fn render(&self, word: &str) -> String {
         let mut blocks = Vec::new();
 
-        let mut defs: BTreeMap<_, Vec<_>> = BTreeMap::new();
-        for d in self.definitions.iter() {
-            defs.entry(d.pos).or_default().push(d.def.clone());
-        }
+        for pos in [
+            PartOfSpeech::Noun,
+            PartOfSpeech::Adjective,
+            PartOfSpeech::Verb,
+            PartOfSpeech::Adverb,
+        ] {
+            if let Some(def) = self.definitions.get(&pos) {
+                let mut s = String::new();
+                s.push_str(&format!("**{word}** _{pos}_\n"));
+                s.push_str(
+                    &def.iter()
+                        .enumerate()
+                        .map(|(i, x)| format!("{}. {}", i + 1, x))
+                        .collect::<Vec<String>>()
+                        .join("\n"),
+                );
+                blocks.push(s);
+            }
 
-        for (pos, def) in defs {
-            let mut s = String::new();
-            s.push_str(&format!("**{word}** _{pos}_\n"));
-            s.push_str(
-                &def.iter()
-                    .enumerate()
-                    .map(|(i, x)| format!("{}. {}", i + 1, x))
-                    .collect::<Vec<String>>()
-                    .join("\n"),
-            );
-            blocks.push(s);
-
-            if let Some(syns) = self.synonyms.iter().find(|s| s.pos == pos) {
+            if let Some(syns) = self.synonyms.get(&pos) {
                 let syns = syns
-                    .synonyms
                     .iter()
                     .map(|x| x.replace('_', " "))
                     .collect::<Vec<String>>()
