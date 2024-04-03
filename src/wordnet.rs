@@ -6,11 +6,11 @@ use std::{
     path::PathBuf,
 };
 
-use self::{pointer::PointerType, synset::SynSet};
+use self::{relation::Relation, synset::SynSet};
 
 mod data;
 mod index;
-mod pointer;
+mod relation;
 mod pos;
 mod synset;
 
@@ -90,13 +90,13 @@ impl WordNet {
     }
 
     pub fn antonyms(&self, word: &str) -> BTreeMap<PartOfSpeech, BTreeSet<String>> {
-        self.with_relationship(word, PointerType::Antonym)
+        self.with_relationship(word, Relation::Antonym)
     }
 
     pub fn with_relationship(
         &self,
         word: &str,
-        relationship: PointerType,
+        relationship: Relation,
     ) -> BTreeMap<PartOfSpeech, BTreeSet<String>> {
         let word = word.to_lowercase();
         let items = self.index.load(&self.database, &word);
@@ -5683,5 +5683,14 @@ mod tests {
             147306
         "#]];
         expected.assert_debug_eq(&len);
+    }
+
+    #[test]
+    fn all_words_cause() {
+        let wndir = env::var("WORDNET").unwrap();
+        let wn = WordNet::new(PathBuf::from(wndir));
+        let words = wn.all_words().into_iter().map(|w| wn.with_relationship(&w, Relation::Cause)).count();
+        let expected = expect![[]];
+        expected.assert_debug_eq(&words);
     }
 }

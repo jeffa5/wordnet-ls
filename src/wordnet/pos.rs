@@ -39,6 +39,9 @@ impl PartOfSpeech {
             "n" => Some(PartOfSpeech::Noun),
             "v" => Some(PartOfSpeech::Verb),
             "a" => Some(PartOfSpeech::Adjective),
+            // not strictly a part of speech but a ss_type (synset type) but it fits here well
+            // enough for now
+            "s" => Some(PartOfSpeech::Adjective),
             "r" => Some(PartOfSpeech::Adverb),
             _ => None,
         }

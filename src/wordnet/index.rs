@@ -44,6 +44,10 @@ impl Index {
             match l {
                 Err(_) => continue,
                 Ok(l) => {
+                    if l.starts_with("  ") {
+                        // license part
+                        continue;
+                    }
                     let parts: Vec<_> = l.split_whitespace().collect();
                     match parts.first() {
                         None => continue,
@@ -71,6 +75,10 @@ impl Index {
             match l {
                 Err(_) => continue,
                 Ok(l) => {
+                    if l.starts_with("  ") {
+                        // license part
+                        continue;
+                    }
                     let parts: Vec<_> = l.split_whitespace().collect();
                     match parts.first() {
                         None => continue,

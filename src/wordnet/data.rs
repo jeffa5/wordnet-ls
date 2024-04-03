@@ -1,4 +1,4 @@
-use super::pointer::PointerType;
+use super::relation::Relation;
 use super::pos::PartOfSpeech;
 use super::synset::Relationship;
 use super::synset::SynSet;
@@ -57,7 +57,7 @@ impl SynSet {
                             else {
                                 panic!("invalid chunk")
                             };
-                            let pointer_type = PointerType::try_from_str(pointer_symbol).unwrap();
+                            let pointer_type = Relation::try_from_str(pointer_symbol).unwrap();
                             let synset_offset = synset_offset.parse::<u64>().unwrap();
                             let part_of_speech =
                                 PartOfSpeech::try_from_str(part_of_speech).unwrap();

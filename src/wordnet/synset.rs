@@ -1,4 +1,4 @@
-use super::{pointer::PointerType, PartOfSpeech};
+use super::{relation::Relation, PartOfSpeech};
 
 #[derive(Debug)]
 pub struct SynSet {
@@ -15,7 +15,7 @@ pub struct SynSet {
 #[derive(Debug)]
 pub struct Relationship {
     /// The kind of relationship to other synsets.
-    pub relation: PointerType,
+    pub relation: Relation,
     /// Offset in data file for the part of speech.
     pub synset_offset: u64,
     /// File to look in.
