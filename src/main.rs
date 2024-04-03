@@ -6,12 +6,24 @@ use lsp_server::Notification;
 use lsp_server::Response;
 use lsp_server::ResponseError;
 use lsp_server::{Connection, IoThreads};
+use lsp_types::notification::LogMessage;
+use lsp_types::notification::Notification as _;
 use lsp_types::request::Request;
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::io::BufRead;
 use std::path::Path;
 use std::path::PathBuf;
+
+fn log(c: &Connection, message: impl Serialize) {
+    c.sender
+        .send(Message::Notification(Notification::new(
+            LogMessage::METHOD.to_string(),
+            message,
+        )))
+        .unwrap();
+}
 
 fn server_capabilities() -> serde_json::Value {
     let cap = lsp_types::ServerCapabilities {
@@ -27,6 +39,7 @@ fn connect() -> (lsp_types::InitializeParams, Connection, IoThreads) {
     let caps = server_capabilities();
     let params = c.initialize(caps).unwrap();
     let params: lsp_types::InitializeParams = serde_json::from_value(params).unwrap();
+    log(&c, format!("{:?}", params.initialization_options));
     (params, c, io)
 }
 
@@ -64,6 +77,7 @@ impl Server {
         loop {
             match c.receiver.recv().unwrap() {
                 Message::Request(r) => {
+                    log(&c, format!("Got request {r:?}"));
                     if self.shutdown {
                         c.sender
                             .send(Message::Response(Response {
@@ -121,22 +135,10 @@ impl Server {
                                 .send(Message::Response(Response::new_ok(r.id, none)))
                                 .unwrap()
                         }
-                        _ => c
-                            .sender
-                            .send(Message::Notification(Notification::new(
-                                "window/logMessage".to_string(),
-                                format!("Unmatched request received: {}", r.method),
-                            )))
-                            .unwrap(),
+                        _ => log(&c, format!("Unmatched request received: {}", r.method)),
                     }
                 }
-                Message::Response(r) => c
-                    .sender
-                    .send(Message::Notification(Notification::new(
-                        "window/logMessage".to_string(),
-                        format!("Unmatched response received: {}", r.id),
-                    )))
-                    .unwrap(),
+                Message::Response(r) => log(&c, format!("Unmatched response received: {}", r.id)),
                 Message::Notification(n) => match &n.method[..] {
                     "exit" => {
                         if self.shutdown {
@@ -147,13 +149,7 @@ impl Server {
                             ));
                         }
                     }
-                    _ => c
-                        .sender
-                        .send(Message::Notification(Notification::new(
-                            "window/logMessage".to_string(),
-                            format!("Unmatched notification received: {}", n.method),
-                        )))
-                        .unwrap(),
+                    _ => log(&c, format!("Unmatched notification received: {}", n.method)),
                 },
             }
         }
@@ -186,33 +182,23 @@ struct DictItem {
 impl DictItem {
     fn render(&self, word: &str) -> String {
         let mut blocks = Vec::new();
-        blocks.push(format!("# {}", word));
 
-        let mut defs = BTreeMap::new();
+        let mut defs: BTreeMap<_, Vec<_>> = BTreeMap::new();
         for d in self.definitions.iter() {
-            match defs.get_mut(&d.pos) {
-                None => {
-                    defs.insert(d.pos, vec![d.def.clone()]);
-                }
-                Some(v) => {
-                    v.push(d.def.clone());
-                }
-            }
-        }
-
-        if !defs.is_empty() {
-            blocks.push("## Definitions".to_string())
+            defs.entry(d.pos).or_default().push(d.def.clone());
         }
 
         for (pos, def) in defs {
-            blocks.push(format!("_{}_", pos));
-            blocks.push(
-                def.iter()
+            let mut s = String::new();
+            s.push_str(&format!("**{word}** _{pos}_\n"));
+            s.push_str(
+                &def.iter()
                     .enumerate()
                     .map(|(i, x)| format!("{}. {}", i + 1, x))
                     .collect::<Vec<String>>()
                     .join("\n"),
-            )
+            );
+            blocks.push(s)
         }
 
         let syns = self
@@ -222,8 +208,7 @@ impl DictItem {
             .collect::<Vec<String>>()
             .join(", ");
         if !syns.is_empty() {
-            blocks.push("## Synonyms".to_string());
-            blocks.push(syns)
+            blocks.push(format!("**Synonyms**: {syns}"));
         }
 
         blocks.join("\n\n")
