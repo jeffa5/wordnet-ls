@@ -20,6 +20,8 @@ wordnet for support.
 
 ## Installation
 
+### Cargo
+
 Currently, the main way to install LLS is by cloning the repo and running
 
 ```sh
@@ -30,9 +32,8 @@ This adds the binary `lls` to the rust bin location.
 
 ## Configuration
 
-You'll need to download a copy of
-[wordnet](https://wordnet.princeton.edu/download/current-version). The tested
-version is 3.1.
+You'll need to download a copy of [wordnet](https://wordnet.princeton.edu/download/current-version).
+The tested version is 3.1.
 
 To configure the location of the wordnet dictionary set the `initializationOptions` as:
 
@@ -42,7 +43,17 @@ To configure the location of the wordnet dictionary set the `initializationOptio
 }
 ```
 
-Home dir should get expanded if needed.
+Home dir (`~`) should get expanded if needed.
+
+### Neovim
+
+For debugging and quickly adding it to neovim you can use the provided `vim.lua` file.
+
+```sh
+nvim LLS.txt
+# then :luafile vim.lua
+# Write some words and hit K to hover one using LLS
+```
 
 ## WordNet
 
