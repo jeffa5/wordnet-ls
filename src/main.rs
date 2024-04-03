@@ -178,6 +178,7 @@ struct Dict {
 struct DictItem {
     definitions: BTreeMap<PartOfSpeech, BTreeSet<String>>,
     synonyms: BTreeMap<PartOfSpeech, BTreeSet<String>>,
+    antonyms: BTreeMap<PartOfSpeech, BTreeSet<String>>,
 }
 
 impl DictItem {
@@ -213,6 +214,17 @@ impl DictItem {
                     blocks.push(format!("**Synonyms**: {syns}"));
                 }
             }
+
+            if let Some(syns) = self.antonyms.get(&pos) {
+                let syns = syns
+                    .iter()
+                    .map(|x| x.replace('_', " "))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                if !syns.is_empty() {
+                    blocks.push(format!("**Antonyms**: {syns}"));
+                }
+            }
         }
 
         blocks.join("\n\n")
@@ -229,9 +241,11 @@ impl Dict {
     fn info(&mut self, word: &str) -> String {
         let definitions = self.wordnet.definitions(word);
         let synonyms = self.wordnet.synonyms(word);
+        let antonyms = self.wordnet.antonyms(word);
         let di = DictItem {
             definitions,
             synonyms,
+            antonyms,
         };
         di.render(word)
     }
