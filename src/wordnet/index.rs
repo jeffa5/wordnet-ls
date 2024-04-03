@@ -58,6 +58,32 @@ impl Index {
         }
         None
     }
+
+    pub fn words_for(&self, dir: &Path, pos: PartOfSpeech) -> Vec<String> {
+        let p = dir.join("index").with_extension(pos.as_suffix());
+        let file = match File::open(p) {
+            Ok(file) => file,
+            Err(_) => return Vec::new(),
+        };
+        let reader = BufReader::new(file);
+        let mut results = Vec::new();
+        for l in reader.lines() {
+            match l {
+                Err(_) => continue,
+                Ok(l) => {
+                    let parts: Vec<_> = l.split_whitespace().collect();
+                    match parts.first() {
+                        None => continue,
+                        Some(&lemma) => {
+                            results.push(lemma.to_owned());
+                        }
+                    }
+                }
+            }
+        }
+        results.sort_unstable();
+        results
+    }
 }
 
 impl IndexItem {
