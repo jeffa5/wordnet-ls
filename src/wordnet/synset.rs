@@ -1,6 +1,6 @@
 /// SSType represents the type of a synset
 #[derive(Debug, Copy, Clone)]
-pub enum SSType {
+pub enum SynSetType {
     Noun,
     Verb,
     Adjective,
@@ -8,14 +8,14 @@ pub enum SSType {
     Adverb,
 }
 
-impl SSType {
+impl SynSetType {
     pub fn try_from_str(s: &str) -> Option<Self> {
         match s {
-            "n" => Some(SSType::Noun),
-            "v" => Some(SSType::Verb),
-            "a" => Some(SSType::Adjective),
-            "s" => Some(SSType::AdjectiveSatallite),
-            "r" => Some(SSType::Adverb),
+            "n" => Some(SynSetType::Noun),
+            "v" => Some(SynSetType::Verb),
+            "a" => Some(SynSetType::Adjective),
+            "s" => Some(SynSetType::AdjectiveSatallite),
+            "r" => Some(SynSetType::Adverb),
             _ => None,
         }
     }

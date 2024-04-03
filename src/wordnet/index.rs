@@ -24,27 +24,22 @@ impl Index {
         }
     }
 
-    pub fn load(&mut self, dir: &Path, s: &str) -> &[IndexItem] {
+    pub fn load(&mut self, dir: &Path, word: &str) -> &[IndexItem] {
         let mut items = Vec::new();
 
-        if let Some(i) = self.search(dir, PartOfSpeech::Noun, s) {
-            items.push(i)
+        for pos in [
+            PartOfSpeech::Noun,
+            PartOfSpeech::Verb,
+            PartOfSpeech::Adjective,
+            PartOfSpeech::Adverb,
+        ] {
+            if let Some(i) = self.search(dir, pos, word) {
+                items.push(i)
+            }
         }
 
-        if let Some(i) = self.search(dir, PartOfSpeech::Verb, s) {
-            items.push(i)
-        }
-
-        if let Some(i) = self.search(dir, PartOfSpeech::Adjective, s) {
-            items.push(i)
-        }
-
-        if let Some(i) = self.search(dir, PartOfSpeech::Adverb, s) {
-            items.push(i)
-        }
-
-        self.items.insert(s.to_string(), items);
-        self.items.get(s).unwrap()
+        self.items.insert(word.to_string(), items);
+        self.items.get(word).unwrap()
     }
 
     fn search(&self, dir: &Path, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
@@ -78,6 +73,7 @@ impl Index {
 
 impl IndexItem {
     pub fn from_parts(ps: &[&str]) -> Option<Self> {
+        // line example: computer n 2 7 @ ~ #p %p + ; - 2 1 03082979 09887034
         match ps {
             [_lemma, pos, _synset_cnt, p_cnt, rest @ ..] => {
                 let p_cnt = p_cnt.parse::<usize>().unwrap();

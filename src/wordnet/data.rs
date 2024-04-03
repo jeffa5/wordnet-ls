@@ -1,5 +1,5 @@
 use super::pos::PartOfSpeech;
-use super::synset::SSType;
+use super::synset::SynSetType;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
@@ -16,7 +16,7 @@ pub struct Data {
 
 #[derive(Debug, Clone)]
 pub struct DataItem {
-    synset_type: SSType,
+    synset_type: SynSetType,
     pub words: Vec<String>,
     pub gloss: String,
 }
@@ -93,7 +93,7 @@ impl DataItem {
                             .trim()
                             .to_string();
                         Some(Self {
-                            synset_type: SSType::Noun,
+                            synset_type: SynSetType::Noun,
                             words,
                             gloss,
                         })
