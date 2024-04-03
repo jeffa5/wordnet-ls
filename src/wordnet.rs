@@ -1,6 +1,6 @@
 use data::Data;
 use index::Index;
-use pos::PoS;
+use pos::PartOfSpeech;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -16,7 +16,7 @@ pub struct WordNet {
 }
 
 pub struct Definition {
-    pub pos: PoS,
+    pub pos: PartOfSpeech,
     pub def: String,
 }
 

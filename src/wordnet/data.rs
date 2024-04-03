@@ -1,4 +1,4 @@
-use super::pos::PoS;
+use super::pos::PartOfSpeech;
 use super::synset::SSType;
 use std::collections::HashMap;
 use std::fs::File;
@@ -28,7 +28,7 @@ impl Data {
         }
     }
 
-    pub fn load(&mut self, dir: &Path, o: u64, pos: PoS) -> Vec<DataItem> {
+    pub fn load(&mut self, dir: &Path, o: u64, pos: PartOfSpeech) -> Vec<DataItem> {
         let item = self.items.get(&o);
         match item {
             Some(di) => di.clone(),
@@ -45,7 +45,7 @@ impl Data {
         }
     }
 
-    fn search(&self, dir: &Path, pos: PoS, offset: u64) -> Option<DataItem> {
+    fn search(&self, dir: &Path, pos: PartOfSpeech, offset: u64) -> Option<DataItem> {
         // do a binary search later
         // for now just linear
         let p = dir.join("data").with_extension(pos.as_suffix());
@@ -54,9 +54,8 @@ impl Data {
             Err(_) => return None,
         };
 
-        match file.seek(SeekFrom::Start(offset)) {
-            Err(_) => return None,
-            Ok(_) => (),
+        if file.seek(SeekFrom::Start(offset)).is_err() {
+            return None
         };
 
         let mut reader = BufReader::new(file);
@@ -64,7 +63,7 @@ impl Data {
         reader.read_line(&mut line).unwrap();
 
         let parts: Vec<_> = line.split_whitespace().collect();
-        return Some(DataItem::from_parts(&parts).unwrap());
+        Some(DataItem::from_parts(&parts).unwrap())
     }
 }
 

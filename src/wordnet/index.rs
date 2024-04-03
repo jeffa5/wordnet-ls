@@ -1,4 +1,4 @@
-use super::pos::PoS;
+use super::pos::PartOfSpeech;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
@@ -13,7 +13,7 @@ pub struct Index {
 
 #[derive(Debug)]
 pub struct IndexItem {
-    pub pos: PoS,
+    pub pos: PartOfSpeech,
     pub syn_offsets: Vec<u64>,
 }
 
@@ -27,19 +27,19 @@ impl Index {
     pub fn load(&mut self, dir: &Path, s: &str) -> &[IndexItem] {
         let mut items = Vec::new();
 
-        if let Some(i) = self.search(dir, PoS::Noun, s) {
+        if let Some(i) = self.search(dir, PartOfSpeech::Noun, s) {
             items.push(i)
         }
 
-        if let Some(i) = self.search(dir, PoS::Verb, s) {
+        if let Some(i) = self.search(dir, PartOfSpeech::Verb, s) {
             items.push(i)
         }
 
-        if let Some(i) = self.search(dir, PoS::Adjective, s) {
+        if let Some(i) = self.search(dir, PartOfSpeech::Adjective, s) {
             items.push(i)
         }
 
-        if let Some(i) = self.search(dir, PoS::Adverb, s) {
+        if let Some(i) = self.search(dir, PartOfSpeech::Adverb, s) {
             items.push(i)
         }
 
@@ -47,7 +47,7 @@ impl Index {
         self.items.get(s).unwrap()
     }
 
-    fn search(&self, dir: &Path, pos: PoS, word: &str) -> Option<IndexItem> {
+    fn search(&self, dir: &Path, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
         // do a binary search later
         // for now just linear
         let p = dir.join("index").with_extension(pos.as_suffix());
@@ -61,7 +61,7 @@ impl Index {
                 Err(_) => continue,
                 Ok(l) => {
                     let parts: Vec<_> = l.split_whitespace().collect();
-                    match parts.get(0) {
+                    match parts.first() {
                         None => continue,
                         Some(lemma) => {
                             if *lemma == word {
@@ -86,7 +86,7 @@ impl IndexItem {
                     [_sense_cnt, _tagsense_cnt, rest @ ..] => {
                         let syn_offsets = rest.iter().map(|x| x.parse().unwrap()).collect();
                         Some(Self {
-                            pos: PoS::try_from_str(pos).unwrap(),
+                            pos: PartOfSpeech::try_from_str(pos).unwrap(),
                             syn_offsets,
                         })
                     }

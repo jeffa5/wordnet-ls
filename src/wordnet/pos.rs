@@ -2,44 +2,44 @@ use std::fmt;
 
 /// PoS represents a part of speech
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub enum PoS {
+pub enum PartOfSpeech {
     Noun,
     Verb,
     Adjective,
     Adverb,
 }
 
-impl fmt::Display for PoS {
+impl fmt::Display for PartOfSpeech {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                PoS::Noun => "noun",
-                PoS::Verb => "verb",
-                PoS::Adjective => "adjective",
-                PoS::Adverb => "adverb",
+                PartOfSpeech::Noun => "noun",
+                PartOfSpeech::Verb => "verb",
+                PartOfSpeech::Adjective => "adjective",
+                PartOfSpeech::Adverb => "adverb",
             }
         )
     }
 }
 
-impl PoS {
+impl PartOfSpeech {
     pub fn as_suffix(&self) -> String {
         match self {
-            PoS::Noun => "noun".to_string(),
-            PoS::Verb => "verb".to_string(),
-            PoS::Adjective => "adj".to_string(),
-            PoS::Adverb => "adv".to_string(),
+            PartOfSpeech::Noun => "noun".to_string(),
+            PartOfSpeech::Verb => "verb".to_string(),
+            PartOfSpeech::Adjective => "adj".to_string(),
+            PartOfSpeech::Adverb => "adv".to_string(),
         }
     }
 
     pub fn try_from_str(s: &str) -> Option<Self> {
         match s {
-            "n" => Some(PoS::Noun),
-            "v" => Some(PoS::Verb),
-            "a" => Some(PoS::Adjective),
-            "r" => Some(PoS::Adverb),
+            "n" => Some(PartOfSpeech::Noun),
+            "v" => Some(PartOfSpeech::Verb),
+            "a" => Some(PartOfSpeech::Adjective),
+            "r" => Some(PartOfSpeech::Adverb),
             _ => None,
         }
     }
