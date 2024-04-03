@@ -23,6 +23,7 @@
         pkgs.clippy
         pkgs.crate2nix
       ];
+      WORDNET = "${pkgs.wordnet}/dict";
     };
   };
 }
