@@ -14,8 +14,10 @@ use std::path::Path;
 use std::path::PathBuf;
 
 fn server_capabilities() -> serde_json::Value {
-    let mut cap = lsp_types::ServerCapabilities::default();
-    cap.hover_provider = Some(true);
+    let cap = lsp_types::ServerCapabilities {
+        hover_provider: Some(lsp_types::HoverProviderCapability::Simple(true)),
+        ..Default::default()
+    };
 
     serde_json::to_value(cap).unwrap()
 }
@@ -198,7 +200,7 @@ impl DictItem {
             }
         }
 
-        if defs.len() > 0 {
+        if !defs.is_empty() {
             blocks.push("## Definitions".to_string())
         }
 
@@ -216,10 +218,10 @@ impl DictItem {
         let syns = self
             .synonyms
             .iter()
-            .map(|x| x.replace("_", " "))
+            .map(|x| x.replace('_', " "))
             .collect::<Vec<String>>()
             .join(", ");
-        if syns.len() > 0 {
+        if !syns.is_empty() {
             blocks.push("## Synonyms".to_string());
             blocks.push(syns)
         }
