@@ -26,12 +26,6 @@ Currently, the main way to install LLS is by cloning the repo and running
 cargo install --path . --force
 ```
 
-or
-
-```sh
-make install
-```
-
 This adds the binary `lls` to the rust bin location.
 
 ## Configuration
