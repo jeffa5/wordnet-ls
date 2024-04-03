@@ -38,7 +38,7 @@ To configure the location of the wordnet dictionary set the `initializationOptio
 
 ```json
 {
-  "wordnet": "<location>",
+  "wordnet": "<location>"
 }
 ```
 
