@@ -1,5 +1,5 @@
-use super::relation::Relation;
 use super::pos::PartOfSpeech;
+use super::relation::Relation;
 use super::synset::Relationship;
 use super::synset::SynSet;
 use std::fs::File;

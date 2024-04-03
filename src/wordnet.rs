@@ -1,17 +1,17 @@
 use data::Data;
 use index::Index;
 pub use pos::PartOfSpeech;
+pub use relation::Relation;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::PathBuf,
 };
-
-use self::{relation::Relation, synset::SynSet};
+pub use synset::SynSet;
 
 mod data;
 mod index;
-mod relation;
 mod pos;
+mod relation;
 mod synset;
 
 pub struct WordNet {
@@ -782,9 +782,10 @@ mod tests {
         let resolved_related = syn
             .iter()
             .flat_map(|s| {
-                s.relationships
-                    .iter()
-                    .filter_map(|r| wn.resolve(r.part_of_speech, r.synset_offset).map(|s| (r.relation, s)))
+                s.relationships.iter().filter_map(|r| {
+                    wn.resolve(r.part_of_speech, r.synset_offset)
+                        .map(|s| (r.relation, s))
+                })
             })
             .collect::<Vec<_>>();
         let expected = expect![[r#"
@@ -5689,7 +5690,11 @@ mod tests {
     fn all_words_cause() {
         let wndir = env::var("WORDNET").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
-        let words = wn.all_words().into_iter().map(|w| wn.with_relationship(&w, Relation::Cause)).count();
+        let words = wn
+            .all_words()
+            .into_iter()
+            .map(|w| wn.with_relationship(&w, Relation::Cause))
+            .count();
         let expected = expect![[]];
         expected.assert_debug_eq(&words);
     }

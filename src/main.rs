@@ -1,4 +1,5 @@
 use lls_lib::wordnet::PartOfSpeech;
+use lls_lib::wordnet::Relation;
 use lls_lib::wordnet::WordNet;
 use lsp_server::ErrorCode;
 use lsp_server::Message;
@@ -9,11 +10,16 @@ use lsp_server::{Connection, IoThreads};
 use lsp_types::notification::LogMessage;
 use lsp_types::notification::Notification as _;
 use lsp_types::request::Request;
+use lsp_types::Location;
+use lsp_types::Range;
+use lsp_types::Url;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
+use std::fs::File;
 use std::io::BufRead;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -29,6 +35,7 @@ fn log(c: &Connection, message: impl Serialize) {
 fn server_capabilities() -> serde_json::Value {
     let cap = lsp_types::ServerCapabilities {
         hover_provider: Some(lsp_types::HoverProviderCapability::Simple(true)),
+        definition_provider: Some(lsp_types::OneOf::Left(true)),
         ..Default::default()
     };
 
@@ -117,6 +124,36 @@ impl Server {
                                     Message::Response(Response {
                                         id: r.id,
                                         result: Some(serde_json::to_value(resp).unwrap()),
+                                        error: None,
+                                    })
+                                }
+                                None => Message::Response(Response {
+                                    id: r.id,
+                                    result: None,
+                                    error: None,
+                                }),
+                            };
+
+                            c.sender.send(response).unwrap()
+                        }
+                        lsp_types::request::GotoDefinition::METHOD => {
+                            let tdp =
+                                serde_json::from_value::<lsp_types::TextDocumentPositionParams>(
+                                    r.params,
+                                )
+                                .unwrap();
+
+                            let response = match get_word(tdp) {
+                                Some(w) => {
+                                    let filename = self.dict.definition(&w);
+                                    let resp =
+                                        lsp_types::GotoDefinitionResponse::Scalar(Location {
+                                            uri: Url::from_file_path(filename).unwrap(),
+                                            range: Range::default(),
+                                        });
+                                    Message::Response(Response {
+                                        id: r.id,
+                                        result: serde_json::to_value(resp).ok(),
                                         error: None,
                                     })
                                 }
@@ -248,6 +285,48 @@ impl Dict {
             antonyms,
         };
         di.render(word)
+    }
+
+    fn definition(&self, word: &str) -> PathBuf {
+        let synsets = self.wordnet.synsets(word);
+        let filename = PathBuf::from(format!("/tmp/lls-{word}.md"));
+        let mut file = File::create(&filename).unwrap();
+        file.write_all(format!("# {word}\n").as_bytes()).unwrap();
+        for (i, mut synset) in synsets.into_iter().enumerate() {
+            synset.words.sort_unstable();
+            let synonyms = synset.words.join(", ");
+            let definition = synset.definition;
+            let pos = synset.part_of_speech.to_string();
+            let mut relationships: BTreeMap<Relation, BTreeSet<String>> = BTreeMap::new();
+            for r in synset.relationships {
+                relationships.entry(r.relation).or_default().extend(
+                    self.wordnet
+                        .resolve(r.part_of_speech, r.synset_offset)
+                        .unwrap()
+                        .words,
+                );
+            }
+            let relationships_str = relationships
+                .into_iter()
+                .map(|(relation, words)| {
+                    format!(
+                        "**{relation}**: {}",
+                        words.into_iter().collect::<Vec<_>>().join(", ")
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            let i = i + 1;
+            file.write_all(
+                format!(
+                    "\n{i}. _{pos}_ {definition}\n**synonym**: {synonyms}\n{relationships_str}\n"
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+        }
+        filename
     }
 }
 

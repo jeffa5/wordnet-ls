@@ -21,4 +21,3 @@ pub struct Relationship {
     /// File to look in.
     pub part_of_speech: PartOfSpeech,
 }
-
