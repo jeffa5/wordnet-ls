@@ -111,7 +111,7 @@ impl Server {
 
                             let response = match get_word(tdp) {
                                 Some(w) => {
-                                    let text = self.dict.info(&w);
+                                    let text = self.dict.hover(&w);
                                     let resp = lsp_types::Hover {
                                         contents: lsp_types::HoverContents::Markup(
                                             lsp_types::MarkupContent {
@@ -275,7 +275,7 @@ impl Dict {
         }
     }
 
-    fn info(&mut self, word: &str) -> String {
+    fn hover(&mut self, word: &str) -> String {
         let definitions = self.wordnet.definitions(word);
         let synonyms = self.wordnet.synonyms(word);
         let antonyms = self.wordnet.antonyms(word);
