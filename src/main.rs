@@ -466,13 +466,16 @@ impl Dict {
                 blocks.push(s);
             }
 
-            let mut synonyms = ss_pos.iter().flat_map(|ss| &ss.words).collect::<Vec<_>>();
+            let mut synonyms = ss_pos
+                .iter()
+                .flat_map(|ss| &ss.words)
+                .filter(|w| **w != word)
+                .collect::<Vec<_>>();
             synonyms.sort();
             synonyms.dedup();
             if !synonyms.is_empty() {
                 let syns = synonyms
                     .iter()
-                    .filter(|w| **w != word)
                     .map(|x| x.replace('_', " "))
                     .collect::<Vec<String>>()
                     .join(", ");
