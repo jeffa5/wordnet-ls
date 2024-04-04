@@ -1,3 +1,4 @@
+use clap::Parser;
 use lls_lib::wordnet::PartOfSpeech;
 use lls_lib::wordnet::Relation;
 use lls_lib::wordnet::SynSet;
@@ -24,6 +25,12 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+#[derive(Debug, Clone, Parser)]
+struct Args {
+    #[clap(long)]
+    stdio: bool,
+}
+
 fn log(c: &Connection, message: impl Serialize) {
     c.sender
         .send(Message::Notification(Notification::new(
@@ -43,13 +50,17 @@ fn server_capabilities() -> serde_json::Value {
     serde_json::to_value(cap).unwrap()
 }
 
-fn connect() -> (lsp_types::InitializeParams, Connection, IoThreads) {
-    let (c, io) = Connection::stdio();
+fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) {
+    let (connection, io) = if stdio {
+        Connection::stdio()
+    } else {
+        panic!("No connection mode given, e.g. --stdio");
+    };
     let caps = server_capabilities();
-    let params = c.initialize(caps).unwrap();
+    let params = connection.initialize(caps).unwrap();
     let params: lsp_types::InitializeParams = serde_json::from_value(params).unwrap();
     // log(&c, format!("{:?}", params.initialization_options));
-    (params, c, io)
+    (params, connection, io)
 }
 
 struct Server {
@@ -196,7 +207,8 @@ impl Server {
 }
 
 fn main() {
-    let (p, c, io) = connect();
+    let args = Args::parse();
+    let (p, c, io) = connect(args.stdio);
     let server = Server::new(p);
     let s = server.serve(c);
     io.join().unwrap();
