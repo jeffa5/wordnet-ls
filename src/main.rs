@@ -47,7 +47,7 @@ fn connect() -> (lsp_types::InitializeParams, Connection, IoThreads) {
     let caps = server_capabilities();
     let params = c.initialize(caps).unwrap();
     let params: lsp_types::InitializeParams = serde_json::from_value(params).unwrap();
-    log(&c, format!("{:?}", params.initialization_options));
+    // log(&c, format!("{:?}", params.initialization_options));
     (params, c, io)
 }
 
@@ -85,7 +85,7 @@ impl Server {
         loop {
             match c.receiver.recv().unwrap() {
                 Message::Request(r) => {
-                    log(&c, format!("Got request {r:?}"));
+                    // log(&c, format!("Got request {r:?}"));
                     if self.shutdown {
                         c.sender
                             .send(Message::Response(Response {
