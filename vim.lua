@@ -2,7 +2,7 @@
 --
 require('lspconfig.configs').lls = {
   default_config = {
-    cmd = { 'target/release/lls' },
+    cmd = { 'target/release/lls', '--stdio' },
     filetypes = { 'text', 'markdown' },
     root_dir = function(_)
       return '/'
