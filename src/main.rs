@@ -287,6 +287,7 @@ impl Dict {
             if !synonyms.is_empty() {
                 let syns = synonyms
                     .iter()
+                    .filter(|w| **w != word)
                     .map(|x| x.replace('_', " "))
                     .collect::<Vec<String>>()
                     .join(", ");
@@ -328,7 +329,12 @@ impl Dict {
         file.write_all(format!("# {word}\n").as_bytes()).unwrap();
         for (i, mut synset) in synsets.into_iter().enumerate() {
             synset.words.sort_unstable();
-            let synonyms = synset.words.join(", ");
+            let synonyms = synset
+                .words
+                .into_iter()
+                .filter(|w| w != word)
+                .collect::<Vec<_>>()
+                .join(", ");
             let definition = synset.definition;
             let pos = synset.part_of_speech.to_string();
             let mut relationships: BTreeMap<Relation, BTreeSet<String>> = BTreeMap::new();
