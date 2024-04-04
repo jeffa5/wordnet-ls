@@ -4,7 +4,7 @@ require('lspconfig.configs').lls = nil
 
 require('lspconfig.configs').llsdev = {
   default_config = {
-    cmd = { 'target/release/lls', '--stdio' },
+    cmd = { 'target/debug/lls', '--stdio' },
     filetypes = { 'text', 'markdown' },
     root_dir = function(_)
       return '/'
@@ -19,7 +19,7 @@ require('lspconfig').llsdev.setup {
 --
 -- vim.lsp.start({
 --   name = 'lls',
---   cmd = { 'target/release/lls' },
+--   cmd = { 'target/debug/lls' },
 --   root_dir = '.',
 --   init_options = { wordnet = os.getenv("WNSEARCHDIR") },
 -- })
