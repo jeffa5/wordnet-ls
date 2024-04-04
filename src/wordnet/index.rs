@@ -54,7 +54,11 @@ impl Index {
 
         let mut start = 0_usize;
         let mut end = map.len();
+
+            let mut iword = String::new();
+
         while start < end {
+            iword.clear();
             let mut mid = (start + end) / 2;
             // scan forwards to a newline
             while mid < end && map[mid] != b'\n' {
@@ -71,7 +75,6 @@ impl Index {
             mid += 1;
 
             // now we extract the word from the line
-            let mut iword = String::new();
             while mid < end && map[mid] != b' ' {
                 iword.push(map[mid] as char);
                 mid += 1;
