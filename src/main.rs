@@ -145,7 +145,7 @@ impl Server {
 
                             let response = match get_word(tdp) {
                                 Some(w) => {
-                                    let filename = self.dict.definition(&w);
+                                    let filename = self.dict.all_info(&w);
                                     let resp =
                                         lsp_types::GotoDefinitionResponse::Scalar(Location {
                                             uri: Url::from_file_path(filename).unwrap(),
@@ -287,7 +287,7 @@ impl Dict {
         di.render(word)
     }
 
-    fn definition(&self, word: &str) -> PathBuf {
+    fn all_info(&self, word: &str) -> PathBuf {
         let synsets = self.wordnet.synsets(word);
         let filename = PathBuf::from(format!("/tmp/lls-{word}.md"));
         let mut file = File::create(&filename).unwrap();
