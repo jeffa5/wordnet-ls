@@ -1,11 +1,18 @@
+use memmap::Mmap;
+
 use super::pos::PartOfSpeech;
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::path::Path;
 
 #[derive(Default, Debug)]
-pub struct Index;
+pub struct Index {
+    #[allow(dead_code)]
+    files: BTreeMap<PartOfSpeech, File>,
+    mmaps: BTreeMap<PartOfSpeech, Mmap>,
+}
 
 #[derive(Debug)]
 pub struct IndexItem {
@@ -14,16 +21,22 @@ pub struct IndexItem {
 }
 
 impl Index {
-    pub fn load(&self, dir: &Path, word: &str) -> Vec<IndexItem> {
+    pub fn new(dir: &Path) -> Self {
+        let mut files = BTreeMap::new();
+        let mut mmaps = BTreeMap::new();
+        for pos in PartOfSpeech::iter() {
+            let file = Self::get_file(dir, pos);
+            mmaps.insert(pos, unsafe { Mmap::map(&file).unwrap() });
+            files.insert(pos, file);
+        }
+        Index { files, mmaps }
+    }
+
+    pub fn load(&self, word: &str) -> Vec<IndexItem> {
         let mut items = Vec::new();
 
-        for pos in [
-            PartOfSpeech::Noun,
-            PartOfSpeech::Verb,
-            PartOfSpeech::Adjective,
-            PartOfSpeech::Adverb,
-        ] {
-            if let Some(i) = self.search(dir, pos, word) {
+        for pos in PartOfSpeech::iter() {
+            if let Some(i) = self.search(pos, word) {
                 items.push(i)
             }
         }
@@ -31,16 +44,16 @@ impl Index {
         items
     }
 
-    fn search(&self, dir: &Path, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
+    fn get_file(dir: &Path, pos: PartOfSpeech) -> File {
         let p = dir.join("index").with_extension(pos.as_suffix());
-        let file = match File::open(p) {
-            Ok(file) => file,
-            Err(_) => return None,
-        };
-        let map = unsafe { memmap::Mmap::map(&file).unwrap() };
+        File::open(p).unwrap()
+    }
+
+    fn search(&self, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
+        let map = self.mmaps.get(&pos)?;
 
         let mut start = 0_usize;
-        let mut end = file.metadata().unwrap().len() as usize;
+        let mut end = map.len();
         while start < end {
             let mut mid = (start + end) / 2;
             // scan forwards to a newline

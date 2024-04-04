@@ -228,12 +228,7 @@ impl Dict {
     fn render_hover(&self, word: &str, synsets: Vec<SynSet>) -> String {
         let mut blocks = Vec::new();
 
-        for pos in [
-            PartOfSpeech::Noun,
-            PartOfSpeech::Adjective,
-            PartOfSpeech::Verb,
-            PartOfSpeech::Adverb,
-        ] {
+        for pos in PartOfSpeech::iter() {
             let ss_pos = synsets
                 .iter()
                 .filter(|ss| ss.part_of_speech == pos)

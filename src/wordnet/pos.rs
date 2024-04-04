@@ -46,4 +46,14 @@ impl PartOfSpeech {
             _ => None,
         }
     }
+
+    pub fn iter() -> impl Iterator<Item = PartOfSpeech> {
+        [
+            PartOfSpeech::Noun,
+            PartOfSpeech::Verb,
+            PartOfSpeech::Adjective,
+            PartOfSpeech::Adverb,
+        ]
+        .into_iter()
+    }
 }

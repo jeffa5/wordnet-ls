@@ -20,7 +20,7 @@ pub struct WordNet {
 impl WordNet {
     pub fn new(dir: PathBuf) -> Self {
         Self {
-            index: Index,
+            index: Index::new(&dir),
             data: Data,
             database: dir,
         }
@@ -38,12 +38,7 @@ impl WordNet {
 
     pub fn all_words(&self) -> Vec<String> {
         let mut result = Vec::new();
-        for pos in [
-            PartOfSpeech::Noun,
-            PartOfSpeech::Verb,
-            PartOfSpeech::Adverb,
-            PartOfSpeech::Adjective,
-        ] {
+        for pos in PartOfSpeech::iter() {
             result.append(&mut self.index.words_for(&self.database, pos))
         }
         result.sort_unstable();
@@ -53,7 +48,7 @@ impl WordNet {
 
     pub fn synsets(&self, word: &str) -> Vec<SynSet> {
         let word = word.to_lowercase();
-        let items = self.index.load(&self.database, &word);
+        let items = self.index.load(&word);
         let mut synsets = Vec::new();
 
         for item in items {
