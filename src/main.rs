@@ -49,7 +49,7 @@ fn server_capabilities() -> serde_json::Value {
         hover_provider: Some(lsp_types::HoverProviderCapability::Simple(true)),
         definition_provider: Some(lsp_types::OneOf::Left(true)),
         completion_provider: Some(lsp_types::CompletionOptions {
-            resolve_provider: Some(false),
+            resolve_provider: Some(true),
             ..Default::default()
         }),
         text_document_sync: Some(lsp_types::TextDocumentSyncCapability::Options(
@@ -257,6 +257,26 @@ impl Server {
                                     error: None,
                                 }),
                             };
+
+                            c.sender.send(response).unwrap()
+                        }
+                        lsp_types::request::ResolveCompletionItem::METHOD => {
+                            let mut ci =
+                                serde_json::from_value::<lsp_types::CompletionItem>(r.params)
+                                    .unwrap();
+
+                            let doc = self.dict.hover(&ci.label);
+                            ci.documentation = Some(lsp_types::Documentation::MarkupContent(
+                                lsp_types::MarkupContent {
+                                    kind: lsp_types::MarkupKind::Markdown,
+                                    value: doc,
+                                },
+                            ));
+                            let response = Message::Response(Response {
+                                id: r.id,
+                                result: serde_json::to_value(ci).ok(),
+                                error: None,
+                            });
 
                             c.sender.send(response).unwrap()
                         }
