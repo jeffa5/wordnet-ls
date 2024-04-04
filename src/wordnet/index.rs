@@ -55,7 +55,7 @@ impl Index {
         let mut start = 0_usize;
         let mut end = map.len();
 
-            let mut iword = String::new();
+        let mut iword = String::new();
 
         while start < end {
             iword.clear();
