@@ -12,6 +12,7 @@ serde_json = "1.0.115"
 regex = "1.10.4"
 hex = "0.4.3"
 dirs = "5.0.1"
+memmap = "0.7.0"
 
 [lib]
 name = "lls_lib"

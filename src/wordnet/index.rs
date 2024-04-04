@@ -32,31 +32,67 @@ impl Index {
     }
 
     fn search(&self, dir: &Path, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
-        // do a binary search later
-        // for now just linear
         let p = dir.join("index").with_extension(pos.as_suffix());
         let file = match File::open(p) {
             Ok(file) => file,
             Err(_) => return None,
         };
-        let reader = BufReader::new(file);
-        for l in reader.lines() {
-            match l {
-                Err(_) => continue,
-                Ok(l) => {
-                    if l.starts_with("  ") {
-                        // license part
-                        continue;
+        let map = unsafe { memmap::Mmap::map(&file).unwrap() };
+
+        let mut start = 0_usize;
+        let mut end = file.metadata().unwrap().len() as usize;
+        while start < end {
+            let mut mid = (start + end) / 2;
+            // scan forwards to a newline
+            while mid < end && map[mid] != b'\n' {
+                mid += 1;
+            }
+            let line_end = mid;
+            mid -= 1;
+            while mid > start && map[mid] != b'\n' {
+                mid -= 1;
+            }
+            let line_start = mid;
+
+            // mid now points to a newline character so bump it by one to get the start of the line
+            mid += 1;
+
+            // now we extract the word from the line
+            let mut iword = String::new();
+            while mid < end && map[mid] != b' ' {
+                iword.push(map[mid] as char);
+                mid += 1;
+            }
+            if mid == end {
+                // gone too far
+                end = line_start;
+                continue;
+            }
+            if iword.is_empty() {
+                // may have been a license line
+                start = line_end;
+                continue;
+            }
+
+            // and check how this word compares to the one we are searching for
+            match word.cmp(&iword) {
+                std::cmp::Ordering::Less => {
+                    end = line_start;
+                }
+                std::cmp::Ordering::Equal => {
+                    // read the rest of the line into iword
+                    while map[mid] != b'\n' {
+                        iword.push(map[mid] as char);
+                        mid += 1;
                     }
-                    let parts: Vec<_> = l.split_whitespace().collect();
-                    match parts.first() {
-                        None => continue,
-                        Some(lemma) => {
-                            if *lemma == word {
-                                return Some(IndexItem::from_parts(&parts).unwrap());
-                            }
-                        }
-                    }
+                    // and return the parsed parts
+                    return Some(
+                        IndexItem::from_parts(&iword.split_whitespace().collect::<Vec<_>>())
+                            .unwrap(),
+                    );
+                }
+                std::cmp::Ordering::Greater => {
+                    start = line_end;
                 }
             }
         }

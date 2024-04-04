@@ -5625,7 +5625,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn all_words_cause() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(PathBuf::from(wndir));
@@ -5640,7 +5639,9 @@ mod tests {
                     .sum::<usize>()
             })
             .sum::<usize>();
-        let expected = expect![[]];
+        let expected = expect![[r#"
+            466
+        "#]];
         expected.assert_debug_eq(&words);
     }
 }
