@@ -326,13 +326,13 @@ impl Server {
                                 dotdp.text_document.uri.to_string(),
                                 dotdp.text_document.text,
                             );
-                            log(
-                                &c,
-                                format!(
-                                    "got open document notification for {:?}",
-                                    dotdp.text_document.uri
-                                ),
-                            );
+                            // log(
+                            //     &c,
+                            //     format!(
+                            //         "got open document notification for {:?}",
+                            //         dotdp.text_document.uri
+                            //     ),
+                            // );
                         }
                         lsp_types::notification::DidChangeTextDocument::METHOD => {
                             let dctdp = serde_json::from_value::<
@@ -351,7 +351,7 @@ impl Server {
                                     *content = change.text;
                                 }
                             }
-                            log(&c, format!("got change document notification for {doc:?}"))
+                            // log(&c, format!("got change document notification for {doc:?}"))
                         }
                         lsp_types::notification::DidCloseTextDocument::METHOD => {
                             let dctdp = serde_json::from_value::<
@@ -359,13 +359,13 @@ impl Server {
                             >(n.params)
                             .unwrap();
                             self.open_files.remove(&dctdp.text_document.uri.to_string());
-                            log(
-                                &c,
-                                format!(
-                                    "got close document notification for {:?}",
-                                    dctdp.text_document.uri
-                                ),
-                            );
+                            // log(
+                            //     &c,
+                            //     format!(
+                            //         "got close document notification for {:?}",
+                            //         dctdp.text_document.uri
+                            //     ),
+                            // );
                         }
                         lsp_types::notification::Exit::METHOD => {
                             if self.shutdown {
