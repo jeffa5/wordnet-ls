@@ -14,15 +14,17 @@ use lsp_types::notification::Notification as _;
 use lsp_types::notification::ShowMessage;
 use lsp_types::request::Request;
 use lsp_types::CompletionItem;
+use lsp_types::CompletionList;
 use lsp_types::Location;
+use lsp_types::Position;
 use lsp_types::Range;
+use lsp_types::TextDocumentSyncKind;
 use lsp_types::Url;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fs::File;
-use std::io::BufRead;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -50,6 +52,13 @@ fn server_capabilities() -> serde_json::Value {
             resolve_provider: Some(false),
             ..Default::default()
         }),
+        text_document_sync: Some(lsp_types::TextDocumentSyncCapability::Options(
+            lsp_types::TextDocumentSyncOptions {
+                open_close: Some(true),
+                change: Some(TextDocumentSyncKind::INCREMENTAL),
+                ..Default::default()
+            },
+        )),
         ..Default::default()
     };
 
@@ -71,6 +80,7 @@ fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) 
 
 struct Server {
     dict: Dict,
+    open_files: BTreeMap<String, String>,
     shutdown: bool,
 }
 
@@ -113,6 +123,7 @@ impl Server {
         };
         Self {
             dict: Dict::new(&wordnet_location),
+            open_files: BTreeMap::new(),
             shutdown: false,
         }
     }
@@ -145,7 +156,7 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match get_word(tdp) {
+                            let response = match self.get_word(&tdp) {
                                 Some(w) => {
                                     let text = self.dict.hover(&w);
                                     let resp = lsp_types::Hover {
@@ -179,7 +190,7 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match get_word(tdp) {
+                            let response = match self.get_word(&tdp) {
                                 Some(w) => {
                                     let filename = self.dict.all_info(&w);
                                     let resp =
@@ -203,29 +214,37 @@ impl Server {
                             c.sender.send(response).unwrap()
                         }
                         lsp_types::request::Completion::METHOD => {
-                            let tdp =
-                                serde_json::from_value::<lsp_types::TextDocumentPositionParams>(
-                                    r.params,
-                                )
-                                .unwrap();
+                            let mut tdp = serde_json::from_value::<
+                                lsp_types::TextDocumentPositionParams,
+                            >(r.params)
+                            .unwrap();
 
-                            let response = match get_word(tdp) {
+                            tdp.position.character -= 1;
+                            let response = match self.get_word(&tdp) {
                                 Some(word) => {
-                                    log(&c, format!("Completing {word:?}"));
+                                    let start = match self.dict.all_words.binary_search(&word) {
+                                        Ok(v) => v,
+                                        Err(v) => v,
+                                    };
                                     let matched_words = self
                                         .dict
-                                        .wordnet
-                                        .all_words()
-                                        .into_iter()
-                                        .filter(|w| w.starts_with(&word));
+                                        .all_words
+                                        .iter()
+                                        .skip(start)
+                                        .filter(|w| w.starts_with(&word))
+                                        .take(100);
                                     let completion_items = matched_words
                                         .map(|mw| CompletionItem {
-                                            label: mw,
+                                            label: mw.clone(),
                                             ..Default::default()
                                         })
                                         .collect();
                                     let resp =
-                                        lsp_types::CompletionResponse::Array(completion_items);
+                                        lsp_types::CompletionResponse::List(CompletionList {
+                                            // incomplete as we limit to the first 100 above
+                                            is_incomplete: true,
+                                            items: completion_items,
+                                        });
                                     Message::Response(Response {
                                         id: r.id,
                                         result: serde_json::to_value(resp).ok(),
@@ -252,20 +271,119 @@ impl Server {
                     }
                 }
                 Message::Response(r) => log(&c, format!("Unmatched response received: {}", r.id)),
-                Message::Notification(n) => match &n.method[..] {
-                    "exit" => {
-                        if self.shutdown {
-                            return Ok(());
-                        } else {
-                            return Err(String::from(
-                                "Received exit notification before shutdown request",
-                            ));
+                Message::Notification(n) => {
+                    match &n.method[..] {
+                        lsp_types::notification::DidOpenTextDocument::METHOD => {
+                            let dotdp = serde_json::from_value::<
+                                lsp_types::DidOpenTextDocumentParams,
+                            >(n.params)
+                            .unwrap();
+                            self.open_files.insert(
+                                dotdp.text_document.uri.to_string(),
+                                dotdp.text_document.text,
+                            );
+                            log(
+                                &c,
+                                format!(
+                                    "got open document notification for {:?}",
+                                    dotdp.text_document.uri
+                                ),
+                            );
                         }
+                        lsp_types::notification::DidChangeTextDocument::METHOD => {
+                            let dctdp = serde_json::from_value::<
+                                lsp_types::DidChangeTextDocumentParams,
+                            >(n.params)
+                            .unwrap();
+                            let doc = dctdp.text_document.uri.to_string();
+                            let content = self.open_files.get_mut(&doc).unwrap();
+                            for change in dctdp.content_changes {
+                                if let Some(range) = change.range {
+                                    let start = resolve_position(content, range.start);
+                                    let end = resolve_position(content, range.end);
+                                    content.replace_range(start..end, &change.text);
+                                } else {
+                                    // full content replace
+                                    *content = change.text;
+                                }
+                            }
+                            log(&c, format!("got change document notification for {doc:?}"))
+                        }
+                        lsp_types::notification::DidCloseTextDocument::METHOD => {
+                            let dctdp = serde_json::from_value::<
+                                lsp_types::DidCloseTextDocumentParams,
+                            >(n.params)
+                            .unwrap();
+                            self.open_files.remove(&dctdp.text_document.uri.to_string());
+                            log(
+                                &c,
+                                format!(
+                                    "got close document notification for {:?}",
+                                    dctdp.text_document.uri
+                                ),
+                            );
+                        }
+                        lsp_types::notification::Exit::METHOD => {
+                            if self.shutdown {
+                                return Ok(());
+                            } else {
+                                return Err(String::from(
+                                    "Received exit notification before shutdown request",
+                                ));
+                            }
+                        }
+                        _ => log(&c, format!("Unmatched notification received: {}", n.method)),
                     }
-                    _ => log(&c, format!("Unmatched notification received: {}", n.method)),
-                },
+                }
             }
         }
+    }
+
+    fn get_file_content(&self, uri: &Url) -> String {
+        if let Some(content) = self.open_files.get(&uri.to_string()) {
+            content.to_owned()
+        } else {
+            std::fs::read_to_string(uri.to_file_path().unwrap()).unwrap()
+        }
+    }
+
+    fn get_word(&self, tdp: &lsp_types::TextDocumentPositionParams) -> Option<String> {
+        let content = self.get_file_content(&tdp.text_document.uri);
+        let line = match content.lines().nth(tdp.position.line as usize) {
+            None => return None,
+            Some(l) => l,
+        };
+
+        let mut current_word = String::new();
+        let mut found = false;
+        let word_char = |c: char| c.is_alphabetic() || c == '_';
+        for (i, c) in line.chars().enumerate() {
+            if word_char(c) {
+                for c in c.to_lowercase() {
+                    current_word.push(c);
+                }
+            } else {
+                if found {
+                    return Some(current_word);
+                }
+                current_word.clear();
+            }
+
+            if i == tdp.position.character as usize {
+                found = true
+            }
+
+            if !word_char(c) && found {
+                return Some(current_word);
+            }
+        }
+
+        // got to end of line
+        if found {
+            return Some(current_word);
+        }
+
+        None
     }
 }
 
@@ -286,12 +404,16 @@ fn main() {
 
 struct Dict {
     wordnet: WordNet,
+    all_words: Vec<String>,
 }
 
 impl Dict {
     fn new(value: &Path) -> Self {
+        let wn = WordNet::new(value.to_path_buf());
+        let all_words = wn.all_words();
         Self {
-            wordnet: WordNet::new(value.to_path_buf()),
+            wordnet: wn,
+            all_words,
         }
     }
 
@@ -413,45 +535,11 @@ impl Dict {
     }
 }
 
-fn get_word(tdp: lsp_types::TextDocumentPositionParams) -> Option<String> {
-    let file = std::fs::File::open(tdp.text_document.uri.to_file_path().unwrap()).unwrap();
-    let reader = std::io::BufReader::new(file);
-    let line = match reader.lines().nth(tdp.position.line as usize) {
-        None => return None,
-        Some(l) => match l {
-            Err(_) => return None,
-            Ok(l) => l,
-        },
-    };
-
-    let mut current_word = String::new();
-    let mut found = false;
-    let word_char = |c: char| c.is_alphabetic() || c == '_';
-    for (i, c) in line.chars().enumerate() {
-        if word_char(c) {
-            for c in c.to_lowercase() {
-                current_word.push(c);
-            }
-        } else {
-            if found {
-                return Some(current_word);
-            }
-            current_word.clear();
-        }
-
-        if i == tdp.position.character as usize {
-            found = true
-        }
-
-        if !word_char(c) && found {
-            return Some(current_word);
-        }
-    }
-
-    // got to end of line
-    if found {
-        return Some(current_word);
-    }
-
-    None
+fn resolve_position(content: &str, pos: Position) -> usize {
+    let count = content
+        .lines()
+        .map(|l| l.len())
+        .take(pos.line as usize)
+        .sum::<usize>();
+    pos.line as usize + count + pos.character as usize
 }
