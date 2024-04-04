@@ -347,12 +347,14 @@ fn get_word(tdp: lsp_types::TextDocumentPositionParams) -> Option<String> {
     let mut found = false;
     for (i, c) in line.chars().enumerate() {
         if c.is_alphabetic() {
-            current_word.push_str(&c.to_lowercase().collect::<String>())
+            for c in c.to_lowercase() {
+                current_word.push(c);
+            }
         } else {
             if found {
                 return Some(current_word);
             }
-            current_word = String::new()
+            current_word.clear();
         }
 
         if i == tdp.position.character as usize {
