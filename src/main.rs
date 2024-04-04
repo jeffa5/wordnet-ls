@@ -13,6 +13,7 @@ use lsp_types::notification::LogMessage;
 use lsp_types::notification::Notification as _;
 use lsp_types::notification::ShowMessage;
 use lsp_types::request::Request;
+use lsp_types::CompletionItem;
 use lsp_types::Location;
 use lsp_types::Range;
 use lsp_types::Url;
@@ -45,6 +46,10 @@ fn server_capabilities() -> serde_json::Value {
     let cap = lsp_types::ServerCapabilities {
         hover_provider: Some(lsp_types::HoverProviderCapability::Simple(true)),
         definition_provider: Some(lsp_types::OneOf::Left(true)),
+        completion_provider: Some(lsp_types::CompletionOptions {
+            resolve_provider: Some(false),
+            ..Default::default()
+        }),
         ..Default::default()
     };
 
@@ -182,6 +187,45 @@ impl Server {
                                             uri: Url::from_file_path(filename).unwrap(),
                                             range: Range::default(),
                                         });
+                                    Message::Response(Response {
+                                        id: r.id,
+                                        result: serde_json::to_value(resp).ok(),
+                                        error: None,
+                                    })
+                                }
+                                None => Message::Response(Response {
+                                    id: r.id,
+                                    result: None,
+                                    error: None,
+                                }),
+                            };
+
+                            c.sender.send(response).unwrap()
+                        }
+                        lsp_types::request::Completion::METHOD => {
+                            let tdp =
+                                serde_json::from_value::<lsp_types::TextDocumentPositionParams>(
+                                    r.params,
+                                )
+                                .unwrap();
+
+                            let response = match get_word(tdp) {
+                                Some(word) => {
+                                    log(&c, format!("Completing {word:?}"));
+                                    let matched_words = self
+                                        .dict
+                                        .wordnet
+                                        .all_words()
+                                        .into_iter()
+                                        .filter(|w| w.starts_with(&word));
+                                    let completion_items = matched_words
+                                        .map(|mw| CompletionItem {
+                                            label: mw,
+                                            ..Default::default()
+                                        })
+                                        .collect();
+                                    let resp =
+                                        lsp_types::CompletionResponse::Array(completion_items);
                                     Message::Response(Response {
                                         id: r.id,
                                         result: serde_json::to_value(resp).ok(),
