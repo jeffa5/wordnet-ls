@@ -76,17 +76,9 @@ struct InitializationOptions {
 
 impl Server {
     fn new(c: &Connection, params: lsp_types::InitializeParams) -> Self {
-        let wordnet_location = if let Some(io) = params.initialization_options {
+        let init_opts = if let Some(io) = params.initialization_options {
             match serde_json::from_value::<InitializationOptions>(io) {
-                Ok(v) => {
-                    if v.wordnet.starts_with("~/") {
-                        dirs::home_dir()
-                            .unwrap()
-                            .join(v.wordnet.strip_prefix("~/").unwrap())
-                    } else {
-                        v.wordnet
-                    }
-                }
+                Ok(v) => v,
                 Err(err) => {
                     c.sender
                         .send(Message::Notification(Notification::new(
@@ -106,6 +98,13 @@ impl Server {
                 )))
                 .unwrap();
             panic!("No initialization options given, need it for wordnet location at least")
+        };
+        let wordnet_location = if init_opts.wordnet.starts_with("~/") {
+            dirs::home_dir()
+                .unwrap()
+                .join(init_opts.wordnet.strip_prefix("~/").unwrap())
+        } else {
+            init_opts.wordnet
         };
         Self {
             dict: Dict::new(&wordnet_location),
