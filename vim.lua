@@ -1,6 +1,8 @@
 -- with lspconfig
 --
-require('lspconfig.configs').lls = {
+require('lspconfig.configs').lls = nil
+
+require('lspconfig.configs').llsdev = {
   default_config = {
     cmd = { 'target/release/lls', '--stdio' },
     filetypes = { 'text', 'markdown' },
@@ -9,7 +11,7 @@ require('lspconfig.configs').lls = {
     end,
   },
 }
-require('lspconfig').lls.setup {
+require('lspconfig').llsdev.setup {
   init_options = { wordnet = os.getenv("WNSEARCHDIR") },
 }
 
