@@ -11,14 +11,15 @@ use lsp_server::ResponseError;
 use lsp_server::{Connection, IoThreads};
 use lsp_types::notification::LogMessage;
 use lsp_types::notification::Notification as _;
+use lsp_types::notification::ShowMessage;
 use lsp_types::request::Request;
 use lsp_types::Location;
 use lsp_types::Range;
 use lsp_types::Url;
+use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::Write;
@@ -68,24 +69,43 @@ struct Server {
     shutdown: bool,
 }
 
+#[derive(Serialize, Deserialize)]
+struct InitializationOptions {
+    wordnet: PathBuf,
+}
+
 impl Server {
-    fn new(params: lsp_types::InitializeParams) -> Self {
-        let default_wordnet = PathBuf::from("wordnet");
-        let wordnet_location = match params.initialization_options {
-            None => default_wordnet,
-            Some(l) => match serde_json::from_value::<HashMap<String, String>>(l) {
-                Ok(v) => match v.get("wordnet") {
-                    None => default_wordnet,
-                    Some(l) => {
-                        if l.starts_with("~/") {
-                            dirs::home_dir().unwrap().join(l.trim_start_matches("~/"))
-                        } else {
-                            PathBuf::from(l)
-                        }
+    fn new(c: &Connection, params: lsp_types::InitializeParams) -> Self {
+        let wordnet_location = if let Some(io) = params.initialization_options {
+            match serde_json::from_value::<InitializationOptions>(io) {
+                Ok(v) => {
+                    if v.wordnet.starts_with("~/") {
+                        dirs::home_dir()
+                            .unwrap()
+                            .join(v.wordnet.strip_prefix("~/").unwrap())
+                    } else {
+                        v.wordnet
                     }
-                },
-                Err(_) => default_wordnet,
-            },
+                }
+                Err(err) => {
+                    c.sender
+                        .send(Message::Notification(Notification::new(
+                            ShowMessage::METHOD.to_string(),
+                            format!("Invalid initialization options: {err}"),
+                        )))
+                        .unwrap();
+                    panic!("Invalid initialization options: {err}")
+                }
+            }
+        } else {
+            c.sender
+                .send(Message::Notification(Notification::new(
+                    ShowMessage::METHOD.to_string(),
+                    "No initialization options given, need it for wordnet location at least"
+                        .to_string(),
+                )))
+                .unwrap();
+            panic!("No initialization options given, need it for wordnet location at least")
         };
         Self {
             dict: Dict::new(&wordnet_location),
@@ -209,7 +229,7 @@ impl Server {
 fn main() {
     let args = Args::parse();
     let (p, c, io) = connect(args.stdio);
-    let server = Server::new(p);
+    let server = Server::new(&c, p);
     let s = server.serve(c);
     io.join().unwrap();
     match s {
