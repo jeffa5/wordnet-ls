@@ -521,8 +521,7 @@ impl Dict {
                 .words
                 .into_iter()
                 .filter(|w| w != word)
-                .collect::<Vec<_>>()
-                .join(", ");
+                .collect::<BTreeSet<_>>();
             let definition = synset.definition;
             let pos = synset.part_of_speech.to_string();
             let mut relationships: BTreeMap<Relation, BTreeSet<String>> = BTreeMap::new();
@@ -534,6 +533,11 @@ impl Dict {
                         .words,
                 );
             }
+            let mut relationships = relationships
+                .into_iter()
+                .map(|(r, w)| (r.to_string(), w))
+                .collect::<BTreeMap<_, _>>();
+            relationships.insert("synonym".to_owned(), synonyms);
             let relationships_str = relationships
                 .into_iter()
                 .map(|(relation, words)| {
@@ -547,10 +551,7 @@ impl Dict {
 
             let i = i + 1;
             file.write_all(
-                format!(
-                    "\n{i}. _{pos}_ {definition}\n**synonym**: {synonyms}\n{relationships_str}\n"
-                )
-                .as_bytes(),
+                format!("\n{i}. _{pos}_ {definition}\n{relationships_str}\n").as_bytes(),
             )
             .unwrap();
         }
