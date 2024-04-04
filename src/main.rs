@@ -15,9 +15,14 @@ use lsp_types::notification::ShowMessage;
 use lsp_types::request::Request;
 use lsp_types::CompletionItem;
 use lsp_types::CompletionList;
+use lsp_types::InitializeParams;
+use lsp_types::InitializeResult;
 use lsp_types::Location;
 use lsp_types::Position;
+use lsp_types::PositionEncodingKind;
 use lsp_types::Range;
+use lsp_types::ServerCapabilities;
+use lsp_types::ServerInfo;
 use lsp_types::TextDocumentSyncKind;
 use lsp_types::Url;
 use serde::Deserialize;
@@ -44,8 +49,8 @@ fn log(c: &Connection, message: impl Serialize) {
         .unwrap();
 }
 
-fn server_capabilities() -> serde_json::Value {
-    let cap = lsp_types::ServerCapabilities {
+fn server_capabilities() -> ServerCapabilities {
+    ServerCapabilities {
         hover_provider: Some(lsp_types::HoverProviderCapability::Simple(true)),
         definition_provider: Some(lsp_types::OneOf::Left(true)),
         completion_provider: Some(lsp_types::CompletionOptions {
@@ -60,9 +65,7 @@ fn server_capabilities() -> serde_json::Value {
             },
         )),
         ..Default::default()
-    };
-
-    serde_json::to_value(cap).unwrap()
+    }
 }
 
 fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) {
@@ -71,11 +74,32 @@ fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) 
     } else {
         panic!("No connection mode given, e.g. --stdio");
     };
-    let caps = server_capabilities();
-    let params = connection.initialize(caps).unwrap();
-    let params: lsp_types::InitializeParams = serde_json::from_value(params).unwrap();
+    let mut caps = server_capabilities();
+    let (id, params) = connection.initialize_start().unwrap();
+    let init_params = serde_json::from_value::<InitializeParams>(params).unwrap();
+    if let Some(general) = &init_params.capabilities.general {
+        let pe = general
+            .position_encodings
+            .clone()
+            .unwrap_or_default()
+            .iter()
+            .find(|&pe| *pe == PositionEncodingKind::UTF8)
+            .cloned()
+            .unwrap_or(PositionEncodingKind::UTF16);
+        caps.position_encoding = Some(pe);
+    }
+    let init_result = InitializeResult {
+        capabilities: caps,
+        server_info: Some(ServerInfo {
+            name: "lls".to_owned(),
+            version: None,
+        }),
+    };
+    connection
+        .initialize_finish(id, serde_json::to_value(init_result).unwrap())
+        .unwrap();
     // log(&c, format!("{:?}", params.initialization_options));
-    (params, connection, io)
+    (init_params, connection, io)
 }
 
 struct Server {
