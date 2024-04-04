@@ -383,8 +383,9 @@ fn get_word(tdp: lsp_types::TextDocumentPositionParams) -> Option<String> {
 
     let mut current_word = String::new();
     let mut found = false;
+    let word_char = |c: char| c.is_alphabetic() || c == '_';
     for (i, c) in line.chars().enumerate() {
-        if c.is_alphabetic() {
+        if word_char(c) {
             for c in c.to_lowercase() {
                 current_word.push(c);
             }
@@ -399,7 +400,7 @@ fn get_word(tdp: lsp_types::TextDocumentPositionParams) -> Option<String> {
             found = true
         }
 
-        if !c.is_alphabetic() && found {
+        if !word_char(c) && found {
             return Some(current_word);
         }
     }
