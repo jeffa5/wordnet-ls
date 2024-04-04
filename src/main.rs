@@ -1,5 +1,6 @@
 use lls_lib::wordnet::PartOfSpeech;
 use lls_lib::wordnet::Relation;
+use lls_lib::wordnet::SynSet;
 use lls_lib::wordnet::WordNet;
 use lsp_server::ErrorCode;
 use lsp_server::Message;
@@ -212,62 +213,6 @@ struct Dict {
     wordnet: WordNet,
 }
 
-struct DictItem {
-    definitions: BTreeMap<PartOfSpeech, BTreeSet<String>>,
-    synonyms: BTreeMap<PartOfSpeech, BTreeSet<String>>,
-    antonyms: BTreeMap<PartOfSpeech, BTreeSet<String>>,
-}
-
-impl DictItem {
-    fn render(&self, word: &str) -> String {
-        let mut blocks = Vec::new();
-
-        for pos in [
-            PartOfSpeech::Noun,
-            PartOfSpeech::Adjective,
-            PartOfSpeech::Verb,
-            PartOfSpeech::Adverb,
-        ] {
-            if let Some(def) = self.definitions.get(&pos) {
-                let mut s = String::new();
-                s.push_str(&format!("**{word}** _{pos}_\n"));
-                s.push_str(
-                    &def.iter()
-                        .enumerate()
-                        .map(|(i, x)| format!("{}. {}", i + 1, x))
-                        .collect::<Vec<String>>()
-                        .join("\n"),
-                );
-                blocks.push(s);
-            }
-
-            if let Some(syns) = self.synonyms.get(&pos) {
-                let syns = syns
-                    .iter()
-                    .map(|x| x.replace('_', " "))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-                if !syns.is_empty() {
-                    blocks.push(format!("**Synonyms**: {syns}"));
-                }
-            }
-
-            if let Some(syns) = self.antonyms.get(&pos) {
-                let syns = syns
-                    .iter()
-                    .map(|x| x.replace('_', " "))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-                if !syns.is_empty() {
-                    blocks.push(format!("**Antonyms**: {syns}"));
-                }
-            }
-        }
-
-        blocks.join("\n\n")
-    }
-}
-
 impl Dict {
     fn new(value: &Path) -> Self {
         Self {
@@ -276,15 +221,77 @@ impl Dict {
     }
 
     fn hover(&mut self, word: &str) -> String {
-        let definitions = self.wordnet.definitions(word);
-        let synonyms = self.wordnet.synonyms(word);
-        let antonyms = self.wordnet.antonyms(word);
-        let di = DictItem {
-            definitions,
-            synonyms,
-            antonyms,
-        };
-        di.render(word)
+        let synsets = self.wordnet.synsets(word);
+        self.render_hover(word, synsets)
+    }
+
+    fn render_hover(&self, word: &str, synsets: Vec<SynSet>) -> String {
+        let mut blocks = Vec::new();
+
+        for pos in [
+            PartOfSpeech::Noun,
+            PartOfSpeech::Adjective,
+            PartOfSpeech::Verb,
+            PartOfSpeech::Adverb,
+        ] {
+            let ss_pos = synsets
+                .iter()
+                .filter(|ss| ss.part_of_speech == pos)
+                .collect::<Vec<_>>();
+
+            let defs = ss_pos.iter().map(|ss| &ss.definition).collect::<Vec<_>>();
+            if !defs.is_empty() {
+                let mut s = String::new();
+                s.push_str(&format!("**{word}** _{pos}_\n"));
+                s.push_str(
+                    &defs
+                        .iter()
+                        .enumerate()
+                        .map(|(i, x)| format!("{}. {}", i + 1, x))
+                        .collect::<Vec<String>>()
+                        .join("\n"),
+                );
+                blocks.push(s);
+            }
+
+            let mut synonyms = ss_pos.iter().flat_map(|ss| &ss.words).collect::<Vec<_>>();
+            synonyms.sort();
+            synonyms.dedup();
+            if !synonyms.is_empty() {
+                let syns = synonyms
+                    .iter()
+                    .map(|x| x.replace('_', " "))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                blocks.push(format!("**Synonyms**: {syns}"));
+            }
+
+            let mut antonyms = ss_pos
+                .iter()
+                .flat_map(|ss| {
+                    ss.with_relationship(Relation::Antonym)
+                        .into_iter()
+                        .flat_map(|r| {
+                            self.wordnet
+                                .resolve(r.part_of_speech, r.synset_offset)
+                                .map(|ss| ss.words)
+                                .unwrap_or_default()
+                        })
+                })
+                .collect::<Vec<_>>();
+            antonyms.sort();
+            antonyms.dedup();
+            if !antonyms.is_empty() {
+                let ants = antonyms
+                    .iter()
+                    .map(|x| x.replace('_', " "))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                blocks.push(format!("**Antonyms**: {ants}"));
+            }
+        }
+
+        blocks.join("\n\n")
     }
 
     fn all_info(&self, word: &str) -> PathBuf {

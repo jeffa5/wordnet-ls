@@ -2,7 +2,7 @@ use super::{relation::Relation, PartOfSpeech};
 
 #[derive(Debug)]
 pub struct SynSet {
-    /// The words for the synset.
+    /// The words for the synset, the synonyms.
     pub words: Vec<String>,
     /// Glossary entry.
     pub definition: String,
@@ -20,4 +20,13 @@ pub struct Relationship {
     pub synset_offset: u64,
     /// File to look in.
     pub part_of_speech: PartOfSpeech,
+}
+
+impl SynSet {
+    pub fn with_relationship(&self, relation: Relation) -> Vec<&Relationship> {
+        self.relationships
+            .iter()
+            .filter(|r| r.relation == relation)
+            .collect()
+    }
 }
