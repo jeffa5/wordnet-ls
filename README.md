@@ -1,6 +1,6 @@
 # LLS - Language Language-Server
 
-_This is alpha software, use at your own risk_
+_This is beta software, use at your own risk_
 
 Language servers provide a convenient solution to the problem of language
 support for various editors.
