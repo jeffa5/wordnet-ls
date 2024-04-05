@@ -86,8 +86,8 @@ fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) 
     } else {
         panic!("No connection mode given, e.g. --stdio");
     };
-    let mut caps = server_capabilities();
     let (id, params) = connection.initialize_start().unwrap();
+    let mut caps = server_capabilities();
     let init_params = serde_json::from_value::<InitializeParams>(params).unwrap();
     if let Some(general) = &init_params.capabilities.general {
         let pe = general
@@ -99,6 +99,44 @@ fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) 
             .cloned()
             .unwrap_or(PositionEncodingKind::UTF16);
         caps.position_encoding = Some(pe);
+    }
+    let init_opts = if let Some(io) = &init_params.initialization_options {
+        match serde_json::from_value::<InitializationOptions>(io.clone()) {
+            Ok(v) => v,
+            Err(err) => {
+                connection
+                    .sender
+                    .send(Message::Notification(Notification::new(
+                        ShowMessage::METHOD.to_string(),
+                        format!("Invalid initialization options: {err}"),
+                    )))
+                    .unwrap();
+                panic!("Invalid initialization options: {err}")
+            }
+        }
+    } else {
+        connection
+            .sender
+            .send(Message::Notification(Notification::new(
+                ShowMessage::METHOD.to_string(),
+                "No initialization options given, need it for wordnet location at least"
+                    .to_string(),
+            )))
+            .unwrap();
+        panic!("No initialization options given, need it for wordnet location at least")
+    };
+    if !init_opts.enable_completion.unwrap_or(true) {
+        caps.completion_provider = None;
+    }
+    if !init_opts.enable_hover.unwrap_or(true) {
+        caps.hover_provider = None;
+    }
+    if !init_opts.enable_code_action.unwrap_or(true) {
+        caps.code_action_provider = None;
+        caps.execute_command_provider = None;
+    }
+    if !init_opts.enable_goto_definition.unwrap_or(true) {
+        caps.definition_provider = None;
     }
     let init_result = InitializeResult {
         capabilities: caps,
@@ -123,6 +161,10 @@ struct Server {
 #[derive(Serialize, Deserialize)]
 struct InitializationOptions {
     wordnet: PathBuf,
+    enable_completion: Option<bool>,
+    enable_hover: Option<bool>,
+    enable_code_action: Option<bool>,
+    enable_goto_definition: Option<bool>,
 }
 
 impl Server {
