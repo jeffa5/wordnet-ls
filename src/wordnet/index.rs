@@ -104,10 +104,7 @@ impl Index {
                         mid += 1;
                     }
                     // and return the parsed parts
-                    return Some(
-                        IndexItem::from_parts(&iword.split_whitespace().collect::<Vec<_>>())
-                            .unwrap(),
-                    );
+                    return Some(IndexItem::from_parts(iword.split_whitespace()).unwrap());
                 }
                 std::cmp::Ordering::Greater => {
                     start = line_end;
@@ -144,24 +141,20 @@ impl Index {
 }
 
 impl IndexItem {
-    pub fn from_parts(ps: &[&str]) -> Option<Self> {
+    pub fn from_parts<'a>(mut ps: impl Iterator<Item = &'a str>) -> Option<Self> {
         // line example: computer n 2 7 @ ~ #p %p + ; - 2 1 03082979 09887034
-        match ps {
-            [_lemma, pos, _synset_cnt, p_cnt, rest @ ..] => {
-                let p_cnt = p_cnt.parse::<usize>().unwrap();
-                let rest: Vec<_> = rest.iter().skip(p_cnt).collect();
-                match &rest[..] {
-                    [_sense_cnt, _tagsense_cnt, rest @ ..] => {
-                        let syn_offsets = rest.iter().map(|x| x.parse().unwrap()).collect();
-                        Some(Self {
-                            pos: PartOfSpeech::try_from_str(pos).unwrap(),
-                            syn_offsets,
-                        })
-                    }
-                    _ => None,
-                }
-            }
-            _ => None,
-        }
+        let _lemma = ps.next()?;
+        let pos = ps.next()?;
+        let _synset_cnt = ps.next()?;
+        let p_cnt = ps.next()?;
+        let p_cnt = p_cnt.parse::<usize>().unwrap();
+        let mut ps = ps.skip(p_cnt);
+        let _sens_cnt = ps.next()?;
+        let _tagsense_cnt = ps.next()?;
+        let syn_offsets = ps.map(|x| x.parse().unwrap()).collect();
+        Some(Self {
+            pos: PartOfSpeech::try_from_str(pos).unwrap(),
+            syn_offsets,
+        })
     }
 }
