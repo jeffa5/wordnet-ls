@@ -304,14 +304,15 @@ impl Server {
                                         Ok(v) => v,
                                         Err(v) => v,
                                     };
+                                    let limit = 100;
                                     let matched_words = self
                                         .dict
                                         .all_words
                                         .iter()
                                         .skip(start)
                                         .filter(|w| w.starts_with(&word))
-                                        .take(100);
-                                    let completion_items = matched_words
+                                        .take(limit);
+                                    let completion_items: Vec<_> = matched_words
                                         .map(|mw| CompletionItem {
                                             label: mw.clone(),
                                             ..Default::default()
@@ -319,8 +320,7 @@ impl Server {
                                         .collect();
                                     let resp =
                                         lsp_types::CompletionResponse::List(CompletionList {
-                                            // incomplete as we limit to the first 100 above
-                                            is_incomplete: true,
+                                            is_incomplete: completion_items.len() == limit,
                                             items: completion_items,
                                         });
                                     Message::Response(Response {
