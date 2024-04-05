@@ -684,8 +684,6 @@ impl Dict {
         let mut content = String::new();
         writeln!(content, "# {word}").unwrap();
         for (i, synset) in synsets.into_iter().enumerate() {
-            let mut words = synset.synonyms();
-            words.sort_unstable();
             let definition = synset.definition;
             let pos = synset.part_of_speech.to_string();
             let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> = BTreeMap::new();
@@ -736,7 +734,7 @@ impl Dict {
                     )
                 })
                 .collect::<BTreeMap<_, _>>();
-            let mut lemma_relationships_str = lemma_relationships
+            let lemma_relationships_str = lemma_relationships
                 .into_iter()
                 .map(|(word, relationships)| {
                     let relationships_str = relationships
@@ -752,16 +750,13 @@ impl Dict {
                 })
                 .collect::<Vec<String>>()
                 .join("\n");
-            if !lemma_relationships_str.is_empty() {
-                lemma_relationships_str = format!("**synonyms**:\n{lemma_relationships_str}");
-            }
 
             let i = i + 1;
-            writeln!(
-                content,
-                "\n{i}. _{pos}_ {definition}\n{relationships_str}\n{lemma_relationships_str}"
-            )
-            .unwrap();
+            writeln!(content, "\n{i}. _{pos}_ {definition}\n{relationships_str}").unwrap();
+
+            if !lemma_relationships_str.is_empty() {
+                writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
+            }
         }
         content
     }
@@ -820,7 +815,6 @@ mod tests {
             2. _noun_ a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; "he was faithful to his woman"
             **domain of synset usage**: colloquialism
             **hypernym**: female, female_person
-
 
             3. _noun_ a human female employed to do housework; "the char will clean the carpet"; "I have a woman who comes in four hours a day while I write"
             **hypernym**: cleaner
@@ -963,7 +957,6 @@ mod tests {
             6. _noun_ a regular trip; "the ship made its run in record time"
             **hypernym**: trip
 
-
             7. _noun_ the act of running; traveling on foot at a fast pace; "he broke into a run"; "his daily run keeps him fit"
             **hypernym**: locomotion, travel
             **hyponym**: dash, sprint
@@ -975,14 +968,11 @@ mod tests {
             **hypernym**: period, period_of_time, time_period
             **hyponym**: press_run, print_run, run-time
 
-
             9. _noun_ unrestricted freedom to use; "he has the run of the house"
             **hypernym**: liberty
 
-
             10. _noun_ the production achieved during a continuous period of operation (of a machine or factory etc.); "a daily run of 100,000 gallons of paint"
             **hypernym**: indefinite_quantity
-
 
             11. _noun_ a small stream
             **hypernym**: stream, watercourse
@@ -1016,16 +1006,13 @@ mod tests {
             15. _noun_ an unbroken chronological sequence; "the play had a long run on Broadway"; "the team enjoyed a brief run of victories"
             **hypernym**: chronological_sequence, chronological_succession, sequence, succession, successiveness
 
-
             16. _noun_ a short trip; "take a run into town"
             **hypernym**: trip
-
 
             17. _verb_ move fast by using one's feet, with one foot off the ground at any given time; "Don't run--you'll be out of breath"; "The children ran to the store"
             **hypernym**: hurry, speed, travel_rapidly, zip
             **hyponym**: clip, hare, jog, lope, outrun, romp, run, run_bases, rush, scamper, scurry, scuttle, skitter, sprint, streak, trot
             **verb group**: run
-
 
             18. _verb_ flee; take to one's heels; cut and run; "If you see this man, run!"; "The burglars escaped before the police showed up"
             **hypernym**: go_away, go_forth, leave
@@ -1113,7 +1100,6 @@ mod tests {
             **hypernym**: go, locomote, move, travel
             **verb group**: run
 
-
             28. _verb_ have a tendency or disposition to do or be something; be inclined; "She tends to be nervous before her lectures"; "These dresses run small"; "He inclined to corpulence"
             **hypernym**: be
             **hyponym**: gravitate, suffer, take_kindly_to
@@ -1129,20 +1115,16 @@ mod tests {
             **hypernym**: function, go, operate, run, work
             **verb group**: function, go, operate, run, work
 
-
             30. _verb_ change from one state to another; "run amok"; "run rogue"; "run riot"
             **hypernym**: become, get, go
-
 
             31. _verb_ cause to perform; "run a subject"; "run a process"
             **hypernym**: process, treat
             **hyponym**: rerun
             **verb group**: play, run
 
-
             32. _verb_ be affected by; be subjected to; "run a temperature"; "run a risk"
             **hypernym**: incur
-
 
             33. _verb_ continue to exist; "These stories die hard"; "The legend of Elvis endures"
             **hypernym**: continue
@@ -1161,7 +1143,6 @@ mod tests {
             **hypernym**: occur
             **verb group**: die_hard, endure, persist, prevail, run
 
-
             35. _verb_ carry out a process or program, as on a computer or a machine; "Run the dishwasher"; "run a new program on the Mac"; "the computer executed the instruction"
             **hypernym**: apply, enforce, implement
             **hyponym**: step
@@ -1177,7 +1158,6 @@ mod tests {
 
             37. _verb_ carry out; "run an errand"
             **hypernym**: accomplish, action, carry_out, carry_through, execute, fulfil, fulfill
-
 
             38. _verb_ pass over, across, or through; "He ran his eyes over her body"; "She ran her fingers along the carved figurine"; "He drew her hair through his fingers"
             **hyponym**: rub, thread
@@ -1198,7 +1178,6 @@ mod tests {
             **domain of synset topic**: athletics, sport
             **hypernym**: bring_home_the_bacon, come_through, deliver_the_goods, succeed, win
 
-
             41. _verb_ deal in illegally, such as arms or liquor
             **domain of synset topic**: crime, criminal_offence, criminal_offense, law-breaking, offence, offense
             **hypernym**: merchandise, trade
@@ -1210,7 +1189,6 @@ mod tests {
             **hypernym**: displace, move
             **verb group**: hunt, hunt_down, run, track_down
 
-
             43. _verb_ be diffused; "These dyes and colors are guaranteed not to run"
             **hypernym**: diffuse, fan_out, spread, spread_out
             **hyponym**: crock
@@ -1221,11 +1199,9 @@ mod tests {
             44. _verb_ sail before the wind
             **hypernym**: sail
 
-
             45. _verb_ cover by running; run a certain distance; "She ran 10 miles that day"
             **hypernym**: go_across, go_through, pass
             **verb group**: run
-
 
             46. _verb_ extend or continue for a certain period of time; "The film runs 5 hours"
             **hypernym**: endure, last
@@ -1236,7 +1212,6 @@ mod tests {
             **hypernym**: free, liberate, loose, release, unloose, unloosen
             **verb group**: run
 
-
             48. _verb_ keep company; "the heifers run with the bulls to produce offspring"
             **hypernym**: accompany
             **synonyms**:
@@ -1246,11 +1221,9 @@ mod tests {
             **domain of synset topic**: athletics, sport
             **hypernym**: run
 
-
             50. _verb_ travel rapidly, by any (unspecified) means; "Run to the store!"; "She always runs to Italy, because she has a lover there"
             **hypernym**: go, locomote, move, travel
             **verb group**: run
-
 
             51. _verb_ travel a route regularly; "Ships ply the waters near the coast"
             **hypernym**: jaunt, travel, trip
