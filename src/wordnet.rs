@@ -2,6 +2,7 @@ use data::Data;
 use index::Index;
 pub use pos::PartOfSpeech;
 pub use relation::SemanticRelation;
+pub use relation::LexicalRelation;
 use std::path::PathBuf;
 pub use synset::SynSet;
 

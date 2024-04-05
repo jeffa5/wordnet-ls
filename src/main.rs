@@ -1,4 +1,5 @@
 use clap::Parser;
+use lls_lib::wordnet::LexicalRelation;
 use lls_lib::wordnet::PartOfSpeech;
 use lls_lib::wordnet::SemanticRelation;
 use lls_lib::wordnet::SynSet;
@@ -542,10 +543,6 @@ impl Dict {
         for (i, synset) in synsets.into_iter().enumerate() {
             let mut words = synset.synonyms();
             words.sort_unstable();
-            let synonyms = words
-                .into_iter()
-                .filter(|w| w != word)
-                .collect::<BTreeSet<_>>();
             let definition = synset.definition;
             let pos = synset.part_of_speech.to_string();
             let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> = BTreeMap::new();
@@ -557,13 +554,10 @@ impl Dict {
                         .synonyms(),
                 );
             }
-            let mut relationships = relationships
+            let relationships = relationships
                 .into_iter()
                 .map(|(r, w)| (r.to_string(), w))
                 .collect::<BTreeMap<_, _>>();
-            if !synonyms.is_empty() {
-                relationships.insert("synonym".to_owned(), synonyms);
-            }
             let relationships_str = relationships
                 .into_iter()
                 .map(|(relation, words)| {
@@ -575,8 +569,55 @@ impl Dict {
                 .collect::<Vec<_>>()
                 .join("\n");
 
+            let lemma_relationships = synset
+                .lemmas
+                .iter()
+                .filter(|l| l.word != word)
+                .map(|l| {
+                    (
+                        l.word.clone(),
+                        l.relationships
+                            .iter()
+                            .map(|lr| {
+                                (
+                                    lr.relation,
+                                    self.wordnet
+                                        .resolve(lr.part_of_speech, lr.synset_offset)
+                                        .unwrap()
+                                        .synonyms()[lr.target]
+                                        .clone(),
+                                )
+                            })
+                            .collect::<BTreeMap<LexicalRelation, String>>(),
+                    )
+                })
+                .collect::<BTreeMap<_, _>>();
+            let mut lemma_relationships_str = lemma_relationships
+                .into_iter()
+                .map(|(word, relationships)| {
+                    let relationships_str = relationships
+                        .into_iter()
+                        .map(|(relation, word)| format!("- **{relation}**: {word}"))
+                        .collect::<Vec<String>>()
+                        .join("\n  ");
+                    if relationships_str.is_empty() {
+                        format!("- {word}")
+                    } else {
+                        format!("- {word}:\n  {relationships_str}")
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+            if !lemma_relationships_str.is_empty() {
+                lemma_relationships_str  = format!("**synonyms**:\n{lemma_relationships_str}");
+            }
+
             let i = i + 1;
-            writeln!(content, "\n{i}. _{pos}_ {definition}\n{relationships_str}").unwrap();
+            writeln!(
+                content,
+                "\n{i}. _{pos}_ {definition}\n{relationships_str}\n{lemma_relationships_str}"
+            )
+            .unwrap();
         }
         content
     }
@@ -629,20 +670,29 @@ mod tests {
             **hyponym**: B-girl, Black_woman, Cinderella, Delilah, Wac, Wave, amazon, bachelor_girl, bachelorette, baggage, ball-breaker, ball-buster, bar_girl, bas_bleu, bawd, beauty, bluestocking, bridesmaid, broad, cat, cocotte, coquette, cyprian, dame, deb, debutante, dish, divorcee, dominatrix, donna, enchantress, ex, ex-wife, eyeful, fancy_woman, femme_fatale, fille, flirt, geisha, geisha_girl, gentlewoman, girl, girlfriend, gold_digger, grass_widow, gravida, harlot, heroine, houri, inamorata, jezebel, jilt, kept_woman, knockout, lady, lady_friend, lady_of_pleasure, looker, lulu, ma'am, madam, maenad, maid_of_honor, mantrap, married_woman, materfamilias, matriarch, matron, mestiza, minx, miss, missy, mistress, mother_figure, nanny, nullipara, nurse, nursemaid, nymph, nymphet, old_woman, peach, prickteaser, prostitute, ravisher, shiksa, shikse, siren, smasher, sporting_lady, stunner, sweetheart, sylph, tart, tease, temptress, unmarried_woman, vamp, vamper, vestal, virago, white_woman, whore, widow, widow_woman, wife, woman_of_the_street, wonder_woman, working_girl, yellow_woman, young_lady, young_woman
             **instance hyponym**: Eve
             **part meronym**: adult_female_body, woman's_body
-            **synonym**: adult_female
+            **synonyms**:
+            - adult_female
 
             2. _noun_ a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; "he was faithful to his woman"
             **domain of synset usage**: colloquialism
             **hypernym**: female, female_person
 
+
             3. _noun_ a human female employed to do housework; "the char will clean the carpet"; "I have a woman who comes in four hours a day while I write"
             **hypernym**: cleaner
-            **synonym**: char, charwoman, cleaning_lady, cleaning_woman
+            **synonyms**:
+            - char
+            - charwoman
+            - cleaning_lady
+            - cleaning_woman
 
             4. _noun_ women as a class; "it's an insult to American womanhood"; "woman is the glory of creation"; "the fair sex gathered on the veranda"
             **hypernym**: class, social_class, socio-economic_class, stratum
             **member holonym**: womankind
-            **synonym**: fair_sex, womanhood
+            **synonyms**:
+            - fair_sex
+            - womanhood:
+              - **derivationally related form**: woman
         "##]];
         expected.assert_eq(&info);
     }
