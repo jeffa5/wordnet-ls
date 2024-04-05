@@ -128,10 +128,10 @@ impl Index {
                         // license part
                         continue;
                     }
-                    let parts: Vec<_> = l.split_whitespace().collect();
-                    match parts.first() {
+                    let word = l.split_whitespace().next();
+                    match word {
                         None => continue,
-                        Some(&lemma) => {
+                        Some(lemma) => {
                             results.push(lemma.to_owned());
                         }
                     }
