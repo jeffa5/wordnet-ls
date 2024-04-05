@@ -7,15 +7,18 @@ use lls_lib::wordnet::WordNet;
 use lsp_server::ErrorCode;
 use lsp_server::Message;
 use lsp_server::Notification;
+use lsp_server::Request;
+use lsp_server::RequestId;
 use lsp_server::Response;
 use lsp_server::ResponseError;
 use lsp_server::{Connection, IoThreads};
 use lsp_types::notification::LogMessage;
 use lsp_types::notification::Notification as _;
 use lsp_types::notification::ShowMessage;
-use lsp_types::request::Request;
+use lsp_types::request::Request as _;
 use lsp_types::CompletionItem;
 use lsp_types::CompletionList;
+use lsp_types::ExecuteCommandOptions;
 use lsp_types::InitializeParams;
 use lsp_types::InitializeResult;
 use lsp_types::Location;
@@ -24,6 +27,8 @@ use lsp_types::PositionEncodingKind;
 use lsp_types::Range;
 use lsp_types::ServerCapabilities;
 use lsp_types::ServerInfo;
+use lsp_types::ShowDocumentParams;
+use lsp_types::TextDocumentPositionParams;
 use lsp_types::TextDocumentSyncKind;
 use lsp_types::Url;
 use serde::Deserialize;
@@ -66,6 +71,11 @@ fn server_capabilities() -> ServerCapabilities {
                 ..Default::default()
             },
         )),
+        code_action_provider: Some(lsp_types::CodeActionProviderCapability::Simple(true)),
+        execute_command_provider: Some(ExecuteCommandOptions {
+            commands: vec!["define".to_owned()],
+            ..Default::default()
+        }),
         ..Default::default()
     }
 }
@@ -303,6 +313,97 @@ impl Server {
                                 result: serde_json::to_value(ci).ok(),
                                 error: None,
                             });
+
+                            c.sender.send(response).unwrap()
+                        }
+                        lsp_types::request::CodeActionRequest::METHOD => {
+                            let cap =
+                                serde_json::from_value::<lsp_types::CodeActionParams>(r.params)
+                                    .unwrap();
+
+                            let tdp = TextDocumentPositionParams {
+                                text_document: cap.text_document,
+                                position: cap.range.start,
+                            };
+
+                            let response = match self.get_word(&tdp) {
+                                Some(w) => {
+                                    let resp = lsp_types::CodeActionOrCommand::Command(
+                                        lsp_types::Command {
+                                            title: format!("Define {w}"),
+                                            command: "define".to_owned(),
+                                            arguments: Some(vec![serde_json::Value::String(w)]),
+                                        },
+                                    );
+                                    let resp = vec![resp];
+                                    Message::Response(Response {
+                                        id: r.id,
+                                        result: Some(serde_json::to_value(resp).unwrap()),
+                                        error: None,
+                                    })
+                                }
+                                None => Message::Response(Response {
+                                    id: r.id,
+                                    result: None,
+                                    error: None,
+                                }),
+                            };
+
+                            c.sender.send(response).unwrap()
+                        }
+                        lsp_types::request::ExecuteCommand::METHOD => {
+                            let cap =
+                                serde_json::from_value::<lsp_types::ExecuteCommandParams>(r.params)
+                                    .unwrap();
+
+                            let response = match cap.command.as_str() {
+                                "define" => {
+                                    let word = cap.arguments.first().unwrap();
+                                    match word {
+                                        serde_json::Value::String(word) => {
+                                            let filename = self.dict.all_info_file(word);
+                                            let params = ShowDocumentParams {
+                                                uri: Url::from_file_path(filename).unwrap(),
+                                                external: None,
+                                                take_focus: None,
+                                                selection: None,
+                                            };
+                                            c.sender
+                                                .send(Message::Request(Request {
+                                                    id: RequestId::from(0),
+                                                    method:
+                                                        lsp_types::request::ShowDocument::METHOD
+                                                            .to_owned(),
+                                                    params: serde_json::to_value(params).unwrap(),
+                                                }))
+                                                .unwrap();
+                                            Message::Response(Response {
+                                                id: r.id,
+                                                result: None,
+                                                error: None,
+                                            })
+                                        }
+                                        _ => Message::Response(Response {
+                                            id: r.id,
+                                            result: None,
+                                            error: Some(ResponseError {
+                                                code: ErrorCode::InvalidRequest as i32,
+                                                message: String::from("unknown command"),
+                                                data: None,
+                                            }),
+                                        }),
+                                    }
+                                }
+                                _ => Message::Response(Response {
+                                    id: r.id,
+                                    result: None,
+                                    error: Some(ResponseError {
+                                        code: ErrorCode::InvalidRequest as i32,
+                                        message: String::from("unknown command"),
+                                        data: None,
+                                    }),
+                                }),
+                            };
 
                             c.sender.send(response).unwrap()
                         }
@@ -610,7 +711,7 @@ impl Dict {
                 .collect::<Vec<String>>()
                 .join("\n");
             if !lemma_relationships_str.is_empty() {
-                lemma_relationships_str  = format!("**synonyms**:\n{lemma_relationships_str}");
+                lemma_relationships_str = format!("**synonyms**:\n{lemma_relationships_str}");
             }
 
             let i = i + 1;
