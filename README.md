@@ -13,10 +13,10 @@ wordnet for support.
 
 ## Actions
 
-- [x] hover shows meaning of the word
-- [ ] linting for spelling
-- [ ] some way of doing synonyms and other things
-- [ ] completion for words
+- `hover` shows meaning of the word
+- `gotoDefinition` of a word for all info about it
+    - also available through code actions to avoid conflicts
+- completion for words
 
 ## Installation
 
@@ -45,15 +45,31 @@ To configure the location of the wordnet dictionary set the `initializationOptio
 
 Home dir (`~`) should get expanded if needed.
 
+Capabilities are all enabled by default, but can be disabled in the `initializationOptions` (e.g. to prevent conflicting handling of hover or gotoDefinition):
+
+```json
+{
+  "wordnet": "<location>",
+  "enable_completion": false,
+  "enable_hover": false,
+  "enable_code_actions": false,
+  "enable_goto_definition": false
+}
+```
+
 ### Neovim
 
-For debugging and quickly adding it to neovim you can use the provided `vim.lua` file.
+For debugging and quickly adding it to neovim you can use the provided `vim.lua` file, provided you have `nvim-lspconfig`.
 
 ```sh
 nvim LLS.txt
+# then :LspStop
 # then :luafile vim.lua
+# then :LspStart
 # Write some words and hit K to hover one using LLS
 ```
+
+It by default is set up for the `text` and `markdown` filetypes.
 
 ## WordNet
 
