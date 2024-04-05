@@ -1,6 +1,7 @@
 use data::Data;
 use index::Index;
 pub use pos::PartOfSpeech;
+use rayon::prelude::*;
 pub use relation::LexicalRelation;
 pub use relation::SemanticRelation;
 use std::path::Path;
@@ -33,10 +34,12 @@ impl WordNet {
 
     pub fn all_words(&self) -> Vec<String> {
         let mut result = Vec::new();
-        for pos in PartOfSpeech::iter() {
-            result.append(&mut self.index.words_for(pos))
-        }
-        result.sort_unstable();
+        result.par_extend(
+            PartOfSpeech::variants()
+                .into_par_iter()
+                .flat_map(|pos| self.index.words_for(pos)),
+        );
+        result.par_sort_unstable();
         result.dedup();
         result
     }

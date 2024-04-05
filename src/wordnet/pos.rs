@@ -47,6 +47,15 @@ impl PartOfSpeech {
         }
     }
 
+    pub fn variants() -> [PartOfSpeech; 4] {
+        [
+            PartOfSpeech::Noun,
+            PartOfSpeech::Verb,
+            PartOfSpeech::Adjective,
+            PartOfSpeech::Adverb,
+        ]
+    }
+
     pub fn iter() -> impl Iterator<Item = PartOfSpeech> {
         [
             PartOfSpeech::Noun,
