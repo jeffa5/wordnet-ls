@@ -1,7 +1,9 @@
 use super::pos::PartOfSpeech;
-use super::relation::Relation;
-use super::relation::RelationKind;
-use super::synset::Relationship;
+use super::relation::LexicalRelation;
+use super::relation::SemanticRelation;
+use super::synset::Lemma;
+use super::synset::LexicalRelationship;
+use super::synset::SemanticRelationship;
 use super::synset::SynSet;
 use std::fs::File;
 use std::io::BufRead;
@@ -40,10 +42,15 @@ impl SynSet {
             [_synset_offset, _lex_filenum, ss_type, w_cnt, rest @ ..] => {
                 let w_cnt = usize::from_str_radix(w_cnt, 16).unwrap();
                 let word_lex_id = &rest[..w_cnt * 2];
-                let mut words = Vec::new();
+                let mut lemmas = Vec::new();
+                let part_of_speech = PartOfSpeech::try_from_str(ss_type).unwrap();
                 for (i, w) in word_lex_id.iter().enumerate() {
                     if i % 2 == 0 {
-                        words.push(w.to_string())
+                        lemmas.push(Lemma {
+                            word: w.to_string(),
+                            part_of_speech,
+                            relationships: Vec::new(),
+                        });
                     }
                 }
                 let rest: Vec<_> = rest.iter().skip(w_cnt * 2).collect();
@@ -58,24 +65,30 @@ impl SynSet {
                             else {
                                 panic!("invalid chunk")
                             };
-                            let pointer_type = Relation::try_from_str(pointer_symbol).unwrap();
                             let synset_offset = synset_offset.parse::<u64>().unwrap();
                             let part_of_speech =
                                 PartOfSpeech::try_from_str(part_of_speech).unwrap();
-                            let relation_type = if ***source_target == "0000" {
-                                RelationKind::Semantic
+                            if ***source_target == "0000" {
+                                let pointer_type =
+                                    SemanticRelation::try_from_str(pointer_symbol).unwrap();
+                                relationships.push(SemanticRelationship {
+                                    relation: pointer_type,
+                                    synset_offset,
+                                    part_of_speech,
+                                });
                             } else {
+                                let pointer_type =
+                                    LexicalRelation::try_from_str(pointer_symbol).unwrap();
                                 let (source, target) = source_target.split_at(2);
-                                let source = source.parse::<u32>().unwrap();
-                                let target = target.parse::<u32>().unwrap();
-                                RelationKind::Lexical(source - 1, target - 1)
+                                let source = usize::from_str_radix(source, 16).unwrap();
+                                let target = usize::from_str_radix(target, 16).unwrap();
+                                lemmas[source - 1].relationships.push(LexicalRelationship {
+                                    relation: pointer_type,
+                                    synset_offset,
+                                    part_of_speech,
+                                    target: target - 1,
+                                })
                             };
-                            relationships.push(Relationship {
-                                relation: pointer_type,
-                                synset_offset,
-                                part_of_speech,
-                                kind: relation_type
-                            });
                         }
                         let rest: Vec<_> = rest.iter().skip(p_cnt * 4).collect();
                         let gloss = rest
@@ -87,10 +100,10 @@ impl SynSet {
                             .trim()
                             .to_string();
                         Some(Self {
-                            words,
+                            lemmas,
                             relationships,
                             definition: gloss,
-                            part_of_speech: PartOfSpeech::try_from_str(ss_type).unwrap(),
+                            part_of_speech,
                         })
                     }
                     _ => None,

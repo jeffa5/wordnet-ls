@@ -1,6 +1,6 @@
 use clap::Parser;
 use lls_lib::wordnet::PartOfSpeech;
-use lls_lib::wordnet::Relation;
+use lls_lib::wordnet::SemanticRelation;
 use lls_lib::wordnet::SynSet;
 use lls_lib::wordnet::WordNet;
 use lsp_server::ErrorCode;
@@ -492,8 +492,8 @@ impl Dict {
 
             let mut synonyms = ss_pos
                 .iter()
-                .flat_map(|ss| &ss.words)
-                .filter(|w| **w != word)
+                .flat_map(|ss| ss.synonyms())
+                .filter(|w| *w != word)
                 .collect::<Vec<_>>();
             synonyms.sort();
             synonyms.dedup();
@@ -508,7 +508,8 @@ impl Dict {
 
             let mut antonyms = ss_pos
                 .iter()
-                .flat_map(|ss| ss.antonyms(&self.wordnet))
+                .flat_map(|ss| &ss.lemmas)
+                .flat_map(|l| l.antonyms(&self.wordnet))
                 .collect::<Vec<_>>();
             antonyms.sort();
             antonyms.dedup();
@@ -530,22 +531,22 @@ impl Dict {
         let filename = PathBuf::from(format!("/tmp/lls-{word}.md"));
         let mut file = File::create(&filename).unwrap();
         file.write_all(format!("# {word}\n").as_bytes()).unwrap();
-        for (i, mut synset) in synsets.into_iter().enumerate() {
-            synset.words.sort_unstable();
-            let synonyms = synset
-                .words
+        for (i, synset) in synsets.into_iter().enumerate() {
+            let mut words = synset.synonyms();
+            words.sort_unstable();
+            let synonyms = words
                 .into_iter()
                 .filter(|w| w != word)
                 .collect::<BTreeSet<_>>();
             let definition = synset.definition;
             let pos = synset.part_of_speech.to_string();
-            let mut relationships: BTreeMap<Relation, BTreeSet<String>> = BTreeMap::new();
+            let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> = BTreeMap::new();
             for r in synset.relationships {
                 relationships.entry(r.relation).or_default().extend(
                     self.wordnet
                         .resolve(r.part_of_speech, r.synset_offset)
                         .unwrap()
-                        .words,
+                        .synonyms(),
                 );
             }
             let mut relationships = relationships
