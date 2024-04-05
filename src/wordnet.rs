@@ -7,8 +7,11 @@ pub use relation::SemanticRelation;
 use std::path::Path;
 pub use synset::SynSet;
 
+use self::lemmatize::Lemmatizer;
+
 mod data;
 mod index;
+mod lemmatize;
 mod pos;
 mod relation;
 mod synset;
@@ -16,6 +19,7 @@ mod synset;
 pub struct WordNet {
     index: Index,
     data: Data,
+    lemmatizer: Lemmatizer,
 }
 
 impl WordNet {
@@ -23,6 +27,7 @@ impl WordNet {
         Self {
             index: Index::new(dir),
             data: Data::new(dir),
+            lemmatizer: Lemmatizer::new(dir),
         }
     }
 
@@ -80,7 +85,6 @@ impl WordNet {
 }
 
 #[cfg(test)]
-
 mod tests {
     use std::{env, path::PathBuf};
 

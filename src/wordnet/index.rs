@@ -46,6 +46,10 @@ impl Index {
         items
     }
 
+    pub fn contains(&self, word: &str, pos: PartOfSpeech) -> bool {
+        self.search(pos, word).is_some()
+    }
+
     fn get_file(dir: &Path, pos: PartOfSpeech) -> File {
         let p = dir.join("index").with_extension(pos.as_suffix());
         File::open(p).unwrap()
