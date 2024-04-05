@@ -29,8 +29,9 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::fmt::Write as _;
 use std::fs::File;
-use std::io::Write;
+use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -216,7 +217,7 @@ impl Server {
 
                             let response = match self.get_word(&tdp) {
                                 Some(w) => {
-                                    let filename = self.dict.all_info(&w);
+                                    let filename = self.dict.all_info_file(&w);
                                     let resp =
                                         lsp_types::GotoDefinitionResponse::Scalar(Location {
                                             uri: Url::from_file_path(filename).unwrap(),
@@ -461,7 +462,7 @@ impl Dict {
         }
     }
 
-    fn hover(&mut self, word: &str) -> String {
+    fn hover(&self, word: &str) -> String {
         let synsets = self.wordnet.synsets(word);
         self.render_hover(word, synsets)
     }
@@ -526,11 +527,18 @@ impl Dict {
         blocks.join("\n\n")
     }
 
-    fn all_info(&self, word: &str) -> PathBuf {
-        let synsets = self.wordnet.synsets(word);
+    fn all_info_file(&self, word: &str) -> PathBuf {
+        let info = self.all_info(word);
         let filename = PathBuf::from(format!("/tmp/lls-{word}.md"));
         let mut file = File::create(&filename).unwrap();
-        file.write_all(format!("# {word}\n").as_bytes()).unwrap();
+        file.write_all(info.as_bytes()).unwrap();
+        filename
+    }
+
+    fn all_info(&self, word: &str) -> String {
+        let synsets = self.wordnet.synsets(word);
+        let mut content = String::new();
+        writeln!(content, "# {word}").unwrap();
         for (i, synset) in synsets.into_iter().enumerate() {
             let mut words = synset.synonyms();
             words.sort_unstable();
@@ -566,12 +574,9 @@ impl Dict {
                 .join("\n");
 
             let i = i + 1;
-            file.write_all(
-                format!("\n{i}. _{pos}_ {definition}\n{relationships_str}\n").as_bytes(),
-            )
-            .unwrap();
+            writeln!(content, "\n{i}. _{pos}_ {definition}\n{relationships_str}").unwrap();
         }
-        filename
+        content
     }
 }
 
@@ -582,4 +587,62 @@ fn resolve_position(content: &str, pos: Position) -> usize {
         .take(pos.line as usize)
         .sum::<usize>();
     pos.line as usize + count + pos.character as usize
+}
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+
+    use super::*;
+    use expect_test::expect;
+
+    #[test]
+    fn hover_woman() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let hover = dict.hover("woman");
+        let expected = expect![[r#"
+            **woman** _noun_
+            1. an adult female person (as opposed to a man); "the woman kept house while the man hunted"
+            2. a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; "he was faithful to his woman"
+            3. a human female employed to do housework; "the char will clean the carpet"; "I have a woman who comes in four hours a day while I write"
+            4. women as a class; "it's an insult to American womanhood"; "woman is the glory of creation"; "the fair sex gathered on the veranda"
+
+            **Synonyms**: adult female, char, charwoman, cleaning lady, cleaning woman, fair sex, womanhood
+
+            **Antonyms**: man"#]];
+        expected.assert_eq(&hover);
+    }
+
+    #[test]
+    fn all_info_woman() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let info = dict.all_info("woman");
+        let expected = expect![[r##"
+            # woman
+
+            1. _noun_ an adult female person (as opposed to a man); "the woman kept house while the man hunted"
+            **hypernym**: adult, female, female_person, grownup
+            **hyponym**: B-girl, Black_woman, Cinderella, Delilah, Wac, Wave, amazon, bachelor_girl, bachelorette, baggage, ball-breaker, ball-buster, bar_girl, bas_bleu, bawd, beauty, bluestocking, bridesmaid, broad, cat, cocotte, coquette, cyprian, dame, deb, debutante, dish, divorcee, dominatrix, donna, enchantress, ex, ex-wife, eyeful, fancy_woman, femme_fatale, fille, flirt, geisha, geisha_girl, gentlewoman, girl, girlfriend, gold_digger, grass_widow, gravida, harlot, heroine, houri, inamorata, jezebel, jilt, kept_woman, knockout, lady, lady_friend, lady_of_pleasure, looker, lulu, ma'am, madam, maenad, maid_of_honor, mantrap, married_woman, materfamilias, matriarch, matron, mestiza, minx, miss, missy, mistress, mother_figure, nanny, nullipara, nurse, nursemaid, nymph, nymphet, old_woman, peach, prickteaser, prostitute, ravisher, shiksa, shikse, siren, smasher, sporting_lady, stunner, sweetheart, sylph, tart, tease, temptress, unmarried_woman, vamp, vamper, vestal, virago, white_woman, whore, widow, widow_woman, wife, woman_of_the_street, wonder_woman, working_girl, yellow_woman, young_lady, young_woman
+            **instance hyponym**: Eve
+            **part meronym**: adult_female_body, woman's_body
+            **synonym**: adult_female
+
+            2. _noun_ a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; "he was faithful to his woman"
+            **domain of synset usage**: colloquialism
+            **hypernym**: female, female_person
+            **synonym**:
+
+            3. _noun_ a human female employed to do housework; "the char will clean the carpet"; "I have a woman who comes in four hours a day while I write"
+            **hypernym**: cleaner
+            **synonym**: char, charwoman, cleaning_lady, cleaning_woman
+
+            4. _noun_ women as a class; "it's an insult to American womanhood"; "woman is the glory of creation"; "the fair sex gathered on the veranda"
+            **hypernym**: class, social_class, socio-economic_class, stratum
+            **member holonym**: womankind
+            **synonym**: fair_sex, womanhood
+        "##]];
+        expected.assert_eq(&info);
+    }
 }
