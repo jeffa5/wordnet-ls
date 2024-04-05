@@ -561,7 +561,9 @@ impl Dict {
                 .into_iter()
                 .map(|(r, w)| (r.to_string(), w))
                 .collect::<BTreeMap<_, _>>();
-            relationships.insert("synonym".to_owned(), synonyms);
+            if !synonyms.is_empty() {
+                relationships.insert("synonym".to_owned(), synonyms);
+            }
             let relationships_str = relationships
                 .into_iter()
                 .map(|(relation, words)| {
@@ -632,7 +634,6 @@ mod tests {
             2. _noun_ a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; "he was faithful to his woman"
             **domain of synset usage**: colloquialism
             **hypernym**: female, female_person
-            **synonym**:
 
             3. _noun_ a human female employed to do housework; "the char will clean the carpet"; "I have a woman who comes in four hours a day while I write"
             **hypernym**: cleaner
