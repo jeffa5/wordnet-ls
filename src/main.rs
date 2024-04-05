@@ -269,19 +269,25 @@ impl Server {
                                 .unwrap();
 
                             let response = match self.get_word(&tdp) {
-                                Some(w) => {
-                                    let filename = self.dict.all_info_file(&w);
-                                    let resp =
-                                        lsp_types::GotoDefinitionResponse::Scalar(Location {
-                                            uri: Url::from_file_path(filename).unwrap(),
-                                            range: Range::default(),
-                                        });
-                                    Message::Response(Response {
+                                Some(w) => match self.dict.all_info_file(&w) {
+                                    Some(filename) => {
+                                        let resp =
+                                            lsp_types::GotoDefinitionResponse::Scalar(Location {
+                                                uri: Url::from_file_path(filename).unwrap(),
+                                                range: Range::default(),
+                                            });
+                                        Message::Response(Response {
+                                            id: r.id,
+                                            result: serde_json::to_value(resp).ok(),
+                                            error: None,
+                                        })
+                                    }
+                                    None => Message::Response(Response {
                                         id: r.id,
-                                        result: serde_json::to_value(resp).ok(),
+                                        result: None,
                                         error: None,
-                                    })
-                                }
+                                    }),
+                                },
                                 None => Message::Response(Response {
                                     id: r.id,
                                     result: None,
@@ -403,14 +409,15 @@ impl Server {
                                     let word = cap.arguments.first().unwrap();
                                     match word {
                                         serde_json::Value::String(word) => {
-                                            let filename = self.dict.all_info_file(word);
-                                            let params = ShowDocumentParams {
-                                                uri: Url::from_file_path(filename).unwrap(),
-                                                external: None,
-                                                take_focus: None,
-                                                selection: None,
-                                            };
-                                            c.sender
+                                            match self.dict.all_info_file(word) {
+                                                Some(filename) => {
+                                                    let params = ShowDocumentParams {
+                                                        uri: Url::from_file_path(filename).unwrap(),
+                                                        external: None,
+                                                        take_focus: None,
+                                                        selection: None,
+                                                    };
+                                                    c.sender
                                                 .send(Message::Request(Request {
                                                     id: RequestId::from(0),
                                                     method:
@@ -419,11 +426,18 @@ impl Server {
                                                     params: serde_json::to_value(params).unwrap(),
                                                 }))
                                                 .unwrap();
-                                            Message::Response(Response {
-                                                id: r.id,
-                                                result: None,
-                                                error: None,
-                                            })
+                                                    Message::Response(Response {
+                                                        id: r.id,
+                                                        result: None,
+                                                        error: None,
+                                                    })
+                                                }
+                                                None => Message::Response(Response {
+                                                    id: r.id,
+                                                    result: None,
+                                                    error: None,
+                                                }),
+                                            }
                                         }
                                         _ => Message::Response(Response {
                                             id: r.id,
@@ -680,16 +694,19 @@ impl Dict {
         blocks.join("\n\n")
     }
 
-    fn all_info_file(&self, word: &str) -> PathBuf {
-        let info = self.all_info(word);
+    fn all_info_file(&self, word: &str) -> Option<PathBuf> {
+        let info = self.all_info(word)?;
         let filename = PathBuf::from(format!("/tmp/lls-{word}.md"));
         let mut file = File::create(&filename).unwrap();
         file.write_all(info.as_bytes()).unwrap();
-        filename
+        Some(filename)
     }
 
-    fn all_info(&self, word: &str) -> String {
+    fn all_info(&self, word: &str) -> Option<String> {
         let synsets = self.wordnet.synsets(word);
+        if synsets.is_empty() {
+            return None;
+        }
         let mut content = String::new();
         writeln!(content, "# {word}").unwrap();
         for (i, synset) in synsets.into_iter().enumerate() {
@@ -778,7 +795,7 @@ impl Dict {
                 writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
             }
         }
-        content
+        Some(content)
     }
 }
 
@@ -820,7 +837,7 @@ mod tests {
     fn all_info_woman() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let info = dict.all_info("woman");
+        let info = dict.all_info("woman").unwrap();
         let expected = expect![[r#"
             # woman
 
@@ -934,7 +951,7 @@ mod tests {
     fn all_info_run() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let info = dict.all_info("run");
+        let info = dict.all_info("run").unwrap();
         let expected = expect![[r#"
             # run
 
@@ -1307,7 +1324,7 @@ mod tests {
         let len = dict
             .all_words
             .iter()
-            .map(|w| dict.all_info(w).len())
+            .map(|w| dict.all_info(w).unwrap().len())
             .sum::<usize>();
         let expected = expect![[r#"
             49494379
