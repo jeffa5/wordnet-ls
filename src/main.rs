@@ -598,7 +598,7 @@ struct Dict {
 
 impl Dict {
     fn new(value: &Path) -> Self {
-        let wn = WordNet::new(value.to_path_buf());
+        let wn = WordNet::new(value);
         let all_words = wn.all_words();
         Self {
             wordnet: wn,

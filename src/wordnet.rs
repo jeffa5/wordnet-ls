@@ -3,7 +3,7 @@ use index::Index;
 pub use pos::PartOfSpeech;
 pub use relation::LexicalRelation;
 pub use relation::SemanticRelation;
-use std::path::PathBuf;
+use std::path::Path;
 pub use synset::SynSet;
 
 mod data;
@@ -15,22 +15,20 @@ mod synset;
 pub struct WordNet {
     index: Index,
     data: Data,
-    database: PathBuf,
 }
 
 impl WordNet {
-    pub fn new(dir: PathBuf) -> Self {
+    pub fn new(dir: &Path) -> Self {
         Self {
-            index: Index::new(&dir),
-            data: Data,
-            database: dir,
+            index: Index::new(dir),
+            data: Data::new(dir),
         }
     }
 
     /// Directly resolve a reference, this should only be used with part_of_speech, offset pairs
     /// from the returned results, such as the relationships in synsets.
     pub fn resolve(&self, part_of_speech: PartOfSpeech, offset: u64) -> Option<SynSet> {
-        self.data.load(&self.database, offset, part_of_speech)
+        self.data.load(offset, part_of_speech)
     }
 
     pub fn all_words(&self) -> Vec<String> {
@@ -50,7 +48,7 @@ impl WordNet {
 
         for item in items {
             for offset in item.syn_offsets.iter() {
-                let synset = self.data.load(&self.database, *offset, item.pos);
+                let synset = self.data.load(*offset, item.pos);
                 if let Some(synset) = synset {
                     synsets.push(synset);
                 }
@@ -67,7 +65,7 @@ impl WordNet {
 
         for item in items {
             for offset in item.syn_offsets.iter() {
-                let synset = self.data.load(&self.database, *offset, item.pos);
+                let synset = self.data.load(*offset, item.pos);
                 if let Some(synset) = synset {
                     synsets.push(synset);
                 }
@@ -81,7 +79,7 @@ impl WordNet {
 #[cfg(test)]
 
 mod tests {
-    use std::env;
+    use std::{env, path::PathBuf};
 
     use super::*;
     use expect_test::expect;
@@ -90,7 +88,7 @@ mod tests {
     fn multipos_data_definition() {
         let word = "run";
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let def = wn
             .synsets(word)
             .into_iter()
@@ -164,7 +162,7 @@ mod tests {
     fn multipos_data_synonyms() {
         let word = "run";
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let mut syn = wn
             .synsets(word)
             .into_iter()
@@ -257,7 +255,7 @@ mod tests {
     fn woman_data_synset() {
         let word = "woman";
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let syn = wn.synsets(word);
         let expected = expect![[r#"
             [
@@ -774,7 +772,7 @@ mod tests {
     fn woman_data_synset_resolve() {
         let word = "woman";
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let syn = wn.synsets(word);
         let resolved_related = syn
             .iter()
@@ -5153,7 +5151,7 @@ mod tests {
     fn woman_data_synonyms() {
         let word = "woman";
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let mut syn = wn
             .synsets(word)
             .into_iter()
@@ -5180,7 +5178,7 @@ mod tests {
     fn woman_data_antonyms() {
         let word = "woman";
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let antonyms = wn
             .synsets(word)
             .into_iter()
@@ -5361,7 +5359,7 @@ mod tests {
     #[test]
     fn all_words() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let len = wn.all_words().len();
         let expected = expect![[r#"
             147306
@@ -5372,7 +5370,7 @@ mod tests {
     #[test]
     fn all_words_cause() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir));
         let words = wn
             .all_words()
             .into_iter()
