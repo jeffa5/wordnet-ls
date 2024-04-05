@@ -686,6 +686,10 @@ impl Dict {
         for (i, synset) in synsets.into_iter().enumerate() {
             let definition = synset.definition;
             let pos = synset.part_of_speech.to_string();
+
+            let i = i + 1;
+            writeln!(content, "\n{i}. _{pos}_ {definition}").unwrap();
+
             let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> = BTreeMap::new();
             for r in synset.relationships {
                 relationships.entry(r.relation).or_default().extend(
@@ -709,6 +713,10 @@ impl Dict {
                 })
                 .collect::<Vec<_>>()
                 .join("\n");
+
+            if !relationships_str.is_empty() {
+                writeln!(content, "{relationships_str}").unwrap()
+            }
 
             let lemma_relationships = synset
                 .lemmas
@@ -750,9 +758,6 @@ impl Dict {
                 })
                 .collect::<Vec<String>>()
                 .join("\n");
-
-            let i = i + 1;
-            writeln!(content, "\n{i}. _{pos}_ {definition}\n{relationships_str}").unwrap();
 
             if !lemma_relationships_str.is_empty() {
                 writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
