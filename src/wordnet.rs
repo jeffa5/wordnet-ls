@@ -5604,15 +5604,7 @@ mod tests {
         let mut antonyms = wn
             .synsets(word)
             .iter()
-            .flat_map(|ss| {
-                ss.with_relationship(Relation::Antonym)
-                    .into_iter()
-                    .flat_map(|r| {
-                        wn.resolve(r.part_of_speech, r.synset_offset)
-                            .map(|ss| ss.words)
-                            .unwrap_or_default()
-                    })
-            })
+            .flat_map(|ss| ss.antonyms(&wn))
             .collect::<Vec<_>>();
         antonyms.sort();
         antonyms.dedup();

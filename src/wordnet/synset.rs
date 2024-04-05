@@ -1,4 +1,4 @@
-use super::{relation::Relation, PartOfSpeech};
+use super::{relation::Relation, PartOfSpeech, WordNet};
 
 #[derive(Debug)]
 pub struct SynSet {
@@ -28,5 +28,17 @@ impl SynSet {
             .iter()
             .filter(|r| r.relation == relation)
             .collect()
+    }
+
+    pub fn antonyms(&self, wn: &WordNet) -> Vec<String> {
+        let mut antonyms = self
+            .with_relationship(Relation::Antonym)
+            .iter()
+            .filter_map(|r| wn.resolve(r.part_of_speech, r.synset_offset))
+            .flat_map(|s| s.words)
+            .collect::<Vec<_>>();
+        antonyms.sort_unstable();
+        antonyms.dedup();
+        antonyms
     }
 }
