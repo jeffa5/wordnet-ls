@@ -99,63 +99,280 @@ mod tests {
             .collect::<Vec<_>>();
         let expected = expect![[r#"
             [
-                "a score in baseball made by a runner touching all four bases safely; \"the Yankees scored 3 runs in the bottom of the 9th\"; \"their first tally came in the 3rd inning\"",
-                "the act of testing something; \"in the experimental trials the amount of carbon was measured separately\"; \"he called each flip of the coin a new trial\"",
-                "a race run on foot; \"she broke the record for the half-mile run\"",
-                "an unbroken series of events; \"had a streak of bad luck\"; \"Nicklaus had a run of birdies\"",
-                "(American football) a play in which a player attempts to carry the ball through or past the opposing team; \"the defensive line braced to stop the run\"; \"the coach put great emphasis on running\"",
-                "a regular trip; \"the ship made its run in record time\"",
-                "the act of running; traveling on foot at a fast pace; \"he broke into a run\"; \"his daily run keeps him fit\"",
-                "the continuous period of time during which something (a machine or a factory) operates or continues in operation; \"the assembly line was on a 12-hour run\"",
-                "unrestricted freedom to use; \"he has the run of the house\"",
-                "the production achieved during a continuous period of operation (of a machine or factory etc.); \"a daily run of 100,000 gallons of paint\"",
+                "a score in baseball made by a runner touching all four bases safely",
+                "the act of testing something",
+                "a race run on foot",
+                "an unbroken series of events",
+                "(American football) a play in which a player attempts to carry the ball through or past the opposing team",
+                "a regular trip",
+                "the act of running; traveling on foot at a fast pace",
+                "the continuous period of time during which something (a machine or a factory) operates or continues in operation",
+                "unrestricted freedom to use",
+                "the production achieved during a continuous period of operation (of a machine or factory etc.)",
                 "a small stream",
-                "a race between candidates for elective office; \"I managed his campaign for governor\"; \"he is raising money for a Senate run\"",
-                "a row of unravelled stitches; \"she got a run in her stocking\"",
+                "a race between candidates for elective office",
+                "a row of unravelled stitches",
                 "the pouring forth of a fluid",
-                "an unbroken chronological sequence; \"the play had a long run on Broadway\"; \"the team enjoyed a brief run of victories\"",
-                "a short trip; \"take a run into town\"",
-                "move fast by using one's feet, with one foot off the ground at any given time; \"Don't run--you'll be out of breath\"; \"The children ran to the store\"",
-                "flee; take to one's heels; cut and run; \"If you see this man, run!\"; \"The burglars escaped before the police showed up\"",
-                "stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point; \"Service runs all the way to Cranbury\"; \"His knowledge doesn't go very far\"; \"My memory extends back to my fourth year of life\"; \"The facts extend beyond a consideration of her personal assets\"",
-                "direct or control; projects, businesses, etc.; \"She is running a relief operation in the Sudan\"",
-                "have a particular form; \"the story or argument runs as follows\"; \"as the saying goes...\"",
-                "move along, of liquids; \"Water flowed into the cave\"; \"the Missouri feeds into the Mississippi\"",
-                "perform as expected when applied; \"The washing machine won't go unless it's plugged in\"; \"Does this old car still run well?\"; \"This old radio doesn't work anymore\"",
-                "change or be different within limits; \"Estimates for the losses in the earthquake range as high as $2 billion\"; \"Interest rates run from 5 to 10 percent\"; \"The instruments ranged from tuba to cymbals\"; \"My students range from very bright to dull\"",
-                "run, stand, or compete for an office or a position; \"Who's running for treasurer this year?\"",
-                "cause to emit recorded audio or video; \"They ran the tapes over and over again\"; \"I'll play you my favorite record\"; \"He never tires of playing that video\"",
-                "move about freely and without restraint, or act as if running around in an uncontrolled way; \"who are these people running around in the building?\"; \"She runs around telling everyone of her troubles\"; \"let the dogs run free\"",
-                "have a tendency or disposition to do or be something; be inclined; \"She tends to be nervous before her lectures\"; \"These dresses run small\"; \"He inclined to corpulence\"",
-                "be operating, running or functioning; \"The car is still running--turn it off!\"",
-                "change from one state to another; \"run amok\"; \"run rogue\"; \"run riot\"",
-                "cause to perform; \"run a subject\"; \"run a process\"",
-                "be affected by; be subjected to; \"run a temperature\"; \"run a risk\"",
-                "continue to exist; \"These stories die hard\"; \"The legend of Elvis endures\"",
-                "occur persistently; \"Musical talent runs in the family\"",
-                "carry out a process or program, as on a computer or a machine; \"Run the dishwasher\"; \"run a new program on the Mac\"; \"the computer executed the instruction\"",
-                "include as the content; broadcast or publicize; \"We ran the ad three times\"; \"This paper carries a restaurant review\"; \"All major networks carried the press conference\"",
-                "carry out; \"run an errand\"",
-                "pass over, across, or through; \"He ran his eyes over her body\"; \"She ran her fingers along the carved figurine\"; \"He drew her hair through his fingers\"",
-                "cause something to pass or lead somewhere; \"Run the wire behind the cabinet\"",
+                "an unbroken chronological sequence",
+                "a short trip",
+                "move fast by using one's feet, with one foot off the ground at any given time",
+                "flee; take to one's heels; cut and run",
+                "stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point",
+                "direct or control; projects, businesses, etc.",
+                "have a particular form",
+                "move along, of liquids",
+                "perform as expected when applied",
+                "change or be different within limits",
+                "run, stand, or compete for an office or a position",
+                "cause to emit recorded audio or video",
+                "move about freely and without restraint, or act as if running around in an uncontrolled way",
+                "have a tendency or disposition to do or be something; be inclined",
+                "be operating, running or functioning",
+                "change from one state to another",
+                "cause to perform",
+                "be affected by; be subjected to",
+                "continue to exist",
+                "occur persistently",
+                "carry out a process or program, as on a computer or a machine",
+                "include as the content; broadcast or publicize",
+                "carry out",
+                "pass over, across, or through",
+                "cause something to pass or lead somewhere",
                 "make without a miss",
                 "deal in illegally, such as arms or liquor",
-                "cause an animal to move fast; \"run the dogs\"",
-                "be diffused; \"These dyes and colors are guaranteed not to run\"",
+                "cause an animal to move fast",
+                "be diffused",
                 "sail before the wind",
-                "cover by running; run a certain distance; \"She ran 10 miles that day\"",
-                "extend or continue for a certain period of time; \"The film runs 5 hours\"",
+                "cover by running; run a certain distance",
+                "extend or continue for a certain period of time",
                 "set animals loose to graze",
-                "keep company; \"the heifers run with the bulls to produce offspring\"",
+                "keep company",
                 "run with the ball; in such sports as football",
-                "travel rapidly, by any (unspecified) means; \"Run to the store!\"; \"She always runs to Italy, because she has a lover there\"",
-                "travel a route regularly; \"Ships ply the waters near the coast\"",
-                "pursue for food or sport (as of wild animals); \"Goering often hunted wild boars in Poland\"; \"The dogs are running deer\"; \"The Duke hunted in these woods\"",
-                "compete in a race; \"he is running the Marathon this year\"; \"let's race and see who gets there first\"",
-                "progress by being changed; \"The speech has to go through several more drafts\"; \"run through your presentation before the meeting\"",
-                "reduce or cause to be reduced from a solid to a liquid state, usually by heating; \"melt butter\"; \"melt down gold\"; \"The wax melted in the sun\"",
-                "come unraveled or undone as if by snagging; \"Her nylons were running\"",
-                "become undone; \"the sweater unraveled\"",
+                "travel rapidly, by any (unspecified) means",
+                "travel a route regularly",
+                "pursue for food or sport (as of wild animals)",
+                "compete in a race",
+                "progress by being changed",
+                "reduce or cause to be reduced from a solid to a liquid state, usually by heating",
+                "come unraveled or undone as if by snagging",
+                "become undone",
+            ]
+        "#]];
+        expected.assert_debug_eq(&def);
+    }
+
+    #[test]
+    fn multipos_data_examples() {
+        let word = "run";
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let wn = WordNet::new(&PathBuf::from(wndir));
+        let def = wn
+            .synsets(word)
+            .into_iter()
+            .map(|ss| ss.examples)
+            .collect::<Vec<_>>();
+        let expected = expect![[r#"
+            [
+                [
+                    "the Yankees scored 3 runs in the bottom of the 9th",
+                    "their first tally came in the 3rd inning",
+                ],
+                [
+                    "in the experimental trials the amount of carbon was measured separately",
+                    "he called each flip of the coin a new trial",
+                ],
+                [
+                    "she broke the record for the half-mile run",
+                ],
+                [
+                    "had a streak of bad luck",
+                    "Nicklaus had a run of birdies",
+                ],
+                [
+                    "the defensive line braced to stop the run",
+                    "the coach put great emphasis on running",
+                ],
+                [
+                    "the ship made its run in record time",
+                ],
+                [
+                    "he broke into a run",
+                    "his daily run keeps him fit",
+                ],
+                [
+                    "the assembly line was on a 12-hour run",
+                ],
+                [
+                    "he has the run of the house",
+                ],
+                [
+                    "a daily run of 100,000 gallons of paint",
+                ],
+                [],
+                [
+                    "I managed his campaign for governor",
+                    "he is raising money for a Senate run",
+                ],
+                [
+                    "she got a run in her stocking",
+                ],
+                [],
+                [
+                    "the play had a long run on Broadway",
+                    "the team enjoyed a brief run of victories",
+                ],
+                [
+                    "take a run into town",
+                ],
+                [
+                    "Don't run--you'll be out of breath",
+                    "The children ran to the store",
+                ],
+                [
+                    "If you see this man, run!",
+                    "The burglars escaped before the police showed up",
+                ],
+                [
+                    "Service runs all the way to Cranbury",
+                    "His knowledge doesn't go very far",
+                    "My memory extends back to my fourth year of life",
+                    "The facts extend beyond a consideration of her personal assets",
+                ],
+                [
+                    "She is running a relief operation in the Sudan",
+                ],
+                [
+                    "the story or argument runs as follows",
+                    "as the saying goes...",
+                ],
+                [
+                    "Water flowed into the cave",
+                    "the Missouri feeds into the Mississippi",
+                ],
+                [
+                    "The washing machine won't go unless it's plugged in",
+                    "Does this old car still run well?",
+                    "This old radio doesn't work anymore",
+                ],
+                [
+                    "Estimates for the losses in the earthquake range as high as $2 billion",
+                    "Interest rates run from 5 to 10 percent",
+                    "The instruments ranged from tuba to cymbals",
+                    "My students range from very bright to dull",
+                ],
+                [
+                    "Who's running for treasurer this year?",
+                ],
+                [
+                    "They ran the tapes over and over again",
+                    "I'll play you my favorite record",
+                    "He never tires of playing that video",
+                ],
+                [
+                    "who are these people running around in the building?",
+                    "She runs around telling everyone of her troubles",
+                    "let the dogs run free",
+                ],
+                [
+                    "She tends to be nervous before her lectures",
+                    "These dresses run small",
+                    "He inclined to corpulence",
+                ],
+                [
+                    "The car is still running--turn it off!",
+                ],
+                [
+                    "run amok",
+                    "run rogue",
+                    "run riot",
+                ],
+                [
+                    "run a subject",
+                    "run a process",
+                ],
+                [
+                    "run a temperature",
+                    "run a risk",
+                ],
+                [
+                    "These stories die hard",
+                    "The legend of Elvis endures",
+                ],
+                [
+                    "Musical talent runs in the family",
+                ],
+                [
+                    "Run the dishwasher",
+                    "run a new program on the Mac",
+                    "the computer executed the instruction",
+                ],
+                [
+                    "We ran the ad three times",
+                    "This paper carries a restaurant review",
+                    "All major networks carried the press conference",
+                ],
+                [
+                    "run an errand",
+                ],
+                [
+                    "He ran his eyes over her body",
+                    "She ran her fingers along the carved figurine",
+                    "He drew her hair through his fingers",
+                ],
+                [
+                    "Run the wire behind the cabinet",
+                ],
+                [],
+                [],
+                [
+                    "run the dogs",
+                ],
+                [
+                    "These dyes and colors are guaranteed not to run",
+                ],
+                [],
+                [
+                    "She ran 10 miles that day",
+                ],
+                [
+                    "The film runs 5 hours",
+                ],
+                [],
+                [
+                    "the heifers run with the bulls to produce offspring",
+                ],
+                [],
+                [
+                    "Run to the store!",
+                    "She always runs to Italy, because she has a lover there",
+                ],
+                [
+                    "Ships ply the waters near the coast",
+                ],
+                [
+                    "Goering often hunted wild boars in Poland",
+                    "The dogs are running deer",
+                    "The Duke hunted in these woods",
+                ],
+                [
+                    "he is running the Marathon this year",
+                    "let's race and see who gets there first",
+                ],
+                [
+                    "The speech has to go through several more drafts",
+                    "run through your presentation before the meeting",
+                ],
+                [
+                    "melt butter",
+                    "melt down gold",
+                    "The wax melted in the sun",
+                ],
+                [
+                    "Her nylons were running",
+                ],
+                [
+                    "the sweater unraveled",
+                ],
             ]
         "#]];
         expected.assert_debug_eq(&def);
@@ -318,7 +535,10 @@ mod tests {
                             relationships: [],
                         },
                     ],
-                    definition: "an adult female person (as opposed to a man); \"the woman kept house while the man hunted\"",
+                    definition: "an adult female person (as opposed to a man)",
+                    examples: [
+                        "the woman kept house while the man hunted",
+                    ],
                     part_of_speech: Noun,
                     relationships: [
                         SemanticRelationship {
@@ -660,7 +880,10 @@ mod tests {
                             ],
                         },
                     ],
-                    definition: "a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; \"he was faithful to his woman\"",
+                    definition: "a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man",
+                    examples: [
+                        "he was faithful to his woman",
+                    ],
                     part_of_speech: Noun,
                     relationships: [
                         SemanticRelationship {
@@ -703,7 +926,11 @@ mod tests {
                             relationships: [],
                         },
                     ],
-                    definition: "a human female employed to do housework; \"the char will clean the carpet\"; \"I have a woman who comes in four hours a day while I write\"",
+                    definition: "a human female employed to do housework",
+                    examples: [
+                        "the char will clean the carpet",
+                        "I have a woman who comes in four hours a day while I write",
+                    ],
                     part_of_speech: Noun,
                     relationships: [
                         SemanticRelationship {
@@ -751,7 +978,12 @@ mod tests {
                             relationships: [],
                         },
                     ],
-                    definition: "women as a class; \"it's an insult to American womanhood\"; \"woman is the glory of creation\"; \"the fair sex gathered on the veranda\"",
+                    definition: "women as a class",
+                    examples: [
+                        "it's an insult to American womanhood",
+                        "woman is the glory of creation",
+                        "the fair sex gathered on the veranda",
+                    ],
                     part_of_speech: Noun,
                     relationships: [
                         SemanticRelationship {
@@ -817,6 +1049,7 @@ mod tests {
                             },
                         ],
                         definition: "a person who belongs to the sex that can have babies",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -910,6 +1143,7 @@ mod tests {
                             },
                         ],
                         definition: "a fully developed person from maturity onward",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1081,6 +1315,7 @@ mod tests {
                             },
                         ],
                         definition: "the body of an adult woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1122,6 +1357,7 @@ mod tests {
                             },
                         ],
                         definition: "(Old Testament) Adam's wife in Judeo-Christian mythology: the first woman and mother of the human race; God created Eve from Adam's rib and placed Adam and Eve in the Garden of Eden",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1148,6 +1384,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who is Black",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1174,6 +1411,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who is White",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1200,6 +1438,7 @@ mod tests {
                             },
                         ],
                         definition: "offensive term for an Asian woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1236,6 +1475,7 @@ mod tests {
                             },
                         ],
                         definition: "a large strong and aggressive woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1257,6 +1497,7 @@ mod tests {
                             },
                         ],
                         definition: "(Greek mythology) a woman participant in the orgiastic rites of Dionysus",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1288,6 +1529,7 @@ mod tests {
                             },
                         ],
                         definition: "a young unmarried woman who lives alone",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1309,6 +1551,7 @@ mod tests {
                             },
                         ],
                         definition: "a worthless or immoral woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1335,6 +1578,7 @@ mod tests {
                             },
                         ],
                         definition: "a demanding woman who destroys men's confidence",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1361,6 +1605,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman employed by a bar to act as a companion to men customers",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1387,6 +1632,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman having literary or intellectual interests",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1413,6 +1659,7 @@ mod tests {
                             },
                         ],
                         definition: "an unmarried woman who attends the bride at a wedding",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1443,7 +1690,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "slang term for a woman; \"a broad is a woman who can throw a mean punch\"",
+                        definition: "slang term for a woman",
+                        examples: [
+                            "a broad is a woman who can throw a mean punch",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1471,7 +1721,10 @@ mod tests {
                                 ],
                             },
                         ],
-                        definition: "a spiteful woman gossip; \"what a cat she is!\"",
+                        definition: "a spiteful woman gossip",
+                        examples: [
+                            "what a cat she is!",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1498,6 +1751,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman whose merits were not been recognized but who then achieves sudden success and recognition",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1596,6 +1850,7 @@ mod tests {
                             },
                         ],
                         definition: "a seductive woman who uses her sex appeal to exploit men",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1636,7 +1891,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "a woman of refinement; \"a chauffeur opened the door of the limousine for the grand lady\"",
+                        definition: "a woman of refinement",
+                        examples: [
+                            "a chauffeur opened the door of the limousine for the grand lady",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1673,6 +1931,7 @@ mod tests {
                             },
                         ],
                         definition: "a young woman making her debut into society",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1706,6 +1965,7 @@ mod tests {
                             },
                         ],
                         definition: "a divorced woman or a woman who is separated from her husband",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1736,7 +1996,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "a woman who was formerly a particular man's wife; \"all his exes live in Texas\"",
+                        definition: "a woman who was formerly a particular man's wife",
+                        examples: [
+                            "all his exes live in Texas",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1758,6 +2021,7 @@ mod tests {
                             },
                         ],
                         definition: "a dominating woman (especially one who plays that role in a sadomasochistic sexual relationship)",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1779,6 +2043,7 @@ mod tests {
                             },
                         ],
                         definition: "an Italian woman of rank",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1825,6 +2090,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who is considered to be dangerously seductive",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1845,7 +2111,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "a strikingly beautiful woman; \"she was a statuesque redheaded eyeful\"",
+                        definition: "a strikingly beautiful woman",
+                        examples: [
+                            "she was a statuesque redheaded eyeful",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1872,6 +2141,7 @@ mod tests {
                             },
                         ],
                         definition: "a Japanese woman trained to entertain men with conversation and singing and dancing",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -1929,7 +2199,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "a young woman; \"a young lady of 18\"",
+                        definition: "a young woman",
+                        examples: [
+                            "a young lady of 18",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2080,7 +2353,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "a friendly informal reference to a grown woman; \"Mrs. Smith was just one of the girls\"",
+                        definition: "a friendly informal reference to a grown woman",
+                        examples: [
+                            "Mrs. Smith was just one of the girls",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2111,7 +2387,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "a girl or young woman with whom a man is romantically involved; \"his girlfriend kicked him out\"",
+                        definition: "a girl or young woman with whom a man is romantically involved",
+                        examples: [
+                            "his girlfriend kicked him out",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2137,7 +2416,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "any female friend; \"Mary and her girlfriend organized the party\"",
+                        definition: "any female friend",
+                        examples: [
+                            "Mary and her girlfriend organized the party",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2164,6 +2446,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who associates with or marries a rich man in order to get valuables from him through gifts or a divorce settlement",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2185,6 +2468,7 @@ mod tests {
                             },
                         ],
                         definition: "a pregnant woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2221,6 +2505,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman possessing heroic qualities or a woman who has performed heroic deeds",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2252,6 +2537,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman with whom you are in love or have an intimate relationship",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2278,6 +2564,7 @@ mod tests {
                             },
                         ],
                         definition: "a shameless impudent scheming woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2306,6 +2593,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who jilts a lover",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2326,7 +2614,10 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "a polite name for any woman; \"a nice lady at the library helped me\"",
+                        definition: "a polite name for any woman",
+                        examples: [
+                            "a nice lady at the library helped me",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2353,6 +2644,7 @@ mod tests {
                             },
                         ],
                         definition: "an unnaturally frenzied or distraught woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2379,6 +2671,7 @@ mod tests {
                             },
                         ],
                         definition: "a female head of a family or tribe",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2405,6 +2698,7 @@ mod tests {
                             },
                         ],
                         definition: "a feisty older woman with a big bosom (as drawn in cartoons)",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2426,6 +2720,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman in charge of nursing in a medical institution",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2452,6 +2747,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman of mixed racial ancestry (especially mixed European and Native American ancestry)",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2488,6 +2784,7 @@ mod tests {
                             },
                         ],
                         definition: "an adulterous woman; a woman who has an ongoing extramarital sexual relationship with a man",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2529,6 +2826,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who evokes the feelings usually reserved for a mother",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2567,6 +2865,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who is the custodian of children",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2608,6 +2907,7 @@ mod tests {
                             },
                         ],
                         definition: "(obstetrics) a woman who has never give birth to a child",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2639,6 +2939,7 @@ mod tests {
                             },
                         ],
                         definition: "a voluptuously beautiful young woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2660,6 +2961,7 @@ mod tests {
                             },
                         ],
                         definition: "a sexually attractive young woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2681,6 +2983,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who is old",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2815,6 +3118,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who engages in sexual intercourse for money",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2871,6 +3175,7 @@ mod tests {
                             },
                         ],
                         definition: "a derogatory term used by Jews to refer to non-Jewish women",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2966,6 +3271,7 @@ mod tests {
                             },
                         ],
                         definition: "a very attractive or seductive looking woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -2987,6 +3293,7 @@ mod tests {
                             },
                         ],
                         definition: "a slender graceful young woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3008,6 +3315,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who is not married",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3046,6 +3354,7 @@ mod tests {
                             },
                         ],
                         definition: "a chaste woman",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3067,6 +3376,7 @@ mod tests {
                             },
                         ],
                         definition: "a member of the Women's Army Corps",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3093,6 +3403,7 @@ mod tests {
                             },
                         ],
                         definition: "a member of the women's reserve of the United States Navy; originally organized during World War II but now no longer a separate branch",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3143,6 +3454,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman whose husband is dead especially one who has not remarried",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3192,6 +3504,7 @@ mod tests {
                             },
                         ],
                         definition: "a married woman; a man's partner in marriage",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3338,6 +3651,7 @@ mod tests {
                             },
                         ],
                         definition: "a woman who can be a successful wife and have a professional career at the same time",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3377,6 +3691,7 @@ mod tests {
                             },
                         ],
                         definition: "a person who belongs to the sex that can have babies",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -3446,6 +3761,7 @@ mod tests {
                             },
                         ],
                         definition: "a colloquial expression; characteristic of spoken or written communication that seeks to imitate informal speech",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -4900,6 +5216,7 @@ mod tests {
                             },
                         ],
                         definition: "someone whose occupation is cleaning",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -4973,7 +5290,11 @@ mod tests {
                                 relationships: [],
                             },
                         ],
-                        definition: "people having the same social, economic, or educational status; \"the working class\"; \"an emerging professional class\"",
+                        definition: "people having the same social, economic, or educational status",
+                        examples: [
+                            "the working class",
+                            "an emerging professional class",
+                        ],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {
@@ -5130,6 +5451,7 @@ mod tests {
                             },
                         ],
                         definition: "women as distinguished from men",
+                        examples: [],
                         part_of_speech: Noun,
                         relationships: [
                             SemanticRelationship {

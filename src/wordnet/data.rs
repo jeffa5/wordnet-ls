@@ -110,13 +110,18 @@ impl SynSet {
                 a.push_str(s);
                 a.push(' ');
                 a
-            })
-            .trim()
-            .to_string();
+            });
+        let gloss = gloss.trim();
+        let mut definition_examples = gloss.split("; \"");
+        let definition = definition_examples.next()?.to_owned();
+        let examples = definition_examples
+            .filter_map(|s| s.strip_suffix('"').map(|s| s.to_owned()))
+            .collect::<Vec<_>>();
         Some(Self {
             lemmas,
             relationships,
-            definition: gloss,
+            definition,
+            examples,
             part_of_speech,
         })
     }

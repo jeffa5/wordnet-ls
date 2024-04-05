@@ -625,10 +625,19 @@ impl Dict {
                 let mut s = String::new();
                 s.push_str(&format!("**{word}** _{pos}_\n"));
                 s.push_str(
-                    &defs
+                    &ss_pos
                         .iter()
                         .enumerate()
-                        .map(|(i, x)| format!("{}. {}", i + 1, x))
+                        .map(|(i, ss)| {
+                            let mut s = format!("{}. {}.", i + 1, ss.definition);
+                            let examples = ss.examples.join("; ");
+                            if !examples.is_empty() {
+                                s.push_str(" e.g. ");
+                                s.push_str(&examples);
+                                s.push('.');
+                            }
+                            s
+                        })
                         .collect::<Vec<String>>()
                         .join("\n"),
                 );
@@ -688,7 +697,13 @@ impl Dict {
             let pos = synset.part_of_speech.to_string();
 
             let i = i + 1;
-            writeln!(content, "\n{i}. _{pos}_ {definition}").unwrap();
+            write!(content, "\n{i}. _{pos}_ {definition}.").unwrap();
+            let examples = synset.examples.join("; ");
+            if !examples.is_empty() {
+                writeln!(content, " e.g. {examples}.").unwrap();
+            } else {
+                writeln!(content).unwrap();
+            }
 
             let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> = BTreeMap::new();
             for r in synset.relationships {
@@ -790,10 +805,10 @@ mod tests {
         let hover = dict.hover("woman");
         let expected = expect![[r#"
             **woman** _noun_
-            1. an adult female person (as opposed to a man); "the woman kept house while the man hunted"
-            2. a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; "he was faithful to his woman"
-            3. a human female employed to do housework; "the char will clean the carpet"; "I have a woman who comes in four hours a day while I write"
-            4. women as a class; "it's an insult to American womanhood"; "woman is the glory of creation"; "the fair sex gathered on the veranda"
+            1. an adult female person (as opposed to a man). e.g. the woman kept house while the man hunted.
+            2. a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man. e.g. he was faithful to his woman.
+            3. a human female employed to do housework. e.g. the char will clean the carpet; I have a woman who comes in four hours a day while I write.
+            4. women as a class. e.g. it's an insult to American womanhood; woman is the glory of creation; the fair sex gathered on the veranda.
 
             **Synonyms**: adult female, char, charwoman, cleaning lady, cleaning woman, fair sex, womanhood
 
@@ -806,10 +821,10 @@ mod tests {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
         let info = dict.all_info("woman");
-        let expected = expect![[r##"
+        let expected = expect![[r#"
             # woman
 
-            1. _noun_ an adult female person (as opposed to a man); "the woman kept house while the man hunted"
+            1. _noun_ an adult female person (as opposed to a man). e.g. the woman kept house while the man hunted.
             **hypernym**: adult, female, female_person, grownup
             **hyponym**: B-girl, Black_woman, Cinderella, Delilah, Wac, Wave, amazon, bachelor_girl, bachelorette, baggage, ball-breaker, ball-buster, bar_girl, bas_bleu, bawd, beauty, bluestocking, bridesmaid, broad, cat, cocotte, coquette, cyprian, dame, deb, debutante, dish, divorcee, dominatrix, donna, enchantress, ex, ex-wife, eyeful, fancy_woman, femme_fatale, fille, flirt, geisha, geisha_girl, gentlewoman, girl, girlfriend, gold_digger, grass_widow, gravida, harlot, heroine, houri, inamorata, jezebel, jilt, kept_woman, knockout, lady, lady_friend, lady_of_pleasure, looker, lulu, ma'am, madam, maenad, maid_of_honor, mantrap, married_woman, materfamilias, matriarch, matron, mestiza, minx, miss, missy, mistress, mother_figure, nanny, nullipara, nurse, nursemaid, nymph, nymphet, old_woman, peach, prickteaser, prostitute, ravisher, shiksa, shikse, siren, smasher, sporting_lady, stunner, sweetheart, sylph, tart, tease, temptress, unmarried_woman, vamp, vamper, vestal, virago, white_woman, whore, widow, widow_woman, wife, woman_of_the_street, wonder_woman, working_girl, yellow_woman, young_lady, young_woman
             **instance hyponym**: Eve
@@ -817,11 +832,11 @@ mod tests {
             **synonyms**:
             - adult_female
 
-            2. _noun_ a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man; "he was faithful to his woman"
+            2. _noun_ a female person who plays a significant role (wife or mistress or girlfriend) in the life of a particular man. e.g. he was faithful to his woman.
             **domain of synset usage**: colloquialism
             **hypernym**: female, female_person
 
-            3. _noun_ a human female employed to do housework; "the char will clean the carpet"; "I have a woman who comes in four hours a day while I write"
+            3. _noun_ a human female employed to do housework. e.g. the char will clean the carpet; I have a woman who comes in four hours a day while I write.
             **hypernym**: cleaner
             **synonyms**:
             - char
@@ -829,14 +844,14 @@ mod tests {
             - cleaning_lady
             - cleaning_woman
 
-            4. _noun_ women as a class; "it's an insult to American womanhood"; "woman is the glory of creation"; "the fair sex gathered on the veranda"
+            4. _noun_ women as a class. e.g. it's an insult to American womanhood; woman is the glory of creation; the fair sex gathered on the veranda.
             **hypernym**: class, social_class, socio-economic_class, stratum
             **member holonym**: womankind
             **synonyms**:
             - fair_sex
             - womanhood:
               - **derivationally related form**: woman
-        "##]];
+        "#]];
         expected.assert_eq(&info);
     }
 
@@ -847,67 +862,67 @@ mod tests {
         let hover = dict.hover("run");
         let expected = expect![[r#"
             **run** _noun_
-            1. a score in baseball made by a runner touching all four bases safely; "the Yankees scored 3 runs in the bottom of the 9th"; "their first tally came in the 3rd inning"
-            2. the act of testing something; "in the experimental trials the amount of carbon was measured separately"; "he called each flip of the coin a new trial"
-            3. a race run on foot; "she broke the record for the half-mile run"
-            4. an unbroken series of events; "had a streak of bad luck"; "Nicklaus had a run of birdies"
-            5. (American football) a play in which a player attempts to carry the ball through or past the opposing team; "the defensive line braced to stop the run"; "the coach put great emphasis on running"
-            6. a regular trip; "the ship made its run in record time"
-            7. the act of running; traveling on foot at a fast pace; "he broke into a run"; "his daily run keeps him fit"
-            8. the continuous period of time during which something (a machine or a factory) operates or continues in operation; "the assembly line was on a 12-hour run"
-            9. unrestricted freedom to use; "he has the run of the house"
-            10. the production achieved during a continuous period of operation (of a machine or factory etc.); "a daily run of 100,000 gallons of paint"
-            11. a small stream
-            12. a race between candidates for elective office; "I managed his campaign for governor"; "he is raising money for a Senate run"
-            13. a row of unravelled stitches; "she got a run in her stocking"
-            14. the pouring forth of a fluid
-            15. an unbroken chronological sequence; "the play had a long run on Broadway"; "the team enjoyed a brief run of victories"
-            16. a short trip; "take a run into town"
+            1. a score in baseball made by a runner touching all four bases safely. e.g. the Yankees scored 3 runs in the bottom of the 9th; their first tally came in the 3rd inning.
+            2. the act of testing something. e.g. in the experimental trials the amount of carbon was measured separately; he called each flip of the coin a new trial.
+            3. a race run on foot. e.g. she broke the record for the half-mile run.
+            4. an unbroken series of events. e.g. had a streak of bad luck; Nicklaus had a run of birdies.
+            5. (American football) a play in which a player attempts to carry the ball through or past the opposing team. e.g. the defensive line braced to stop the run; the coach put great emphasis on running.
+            6. a regular trip. e.g. the ship made its run in record time.
+            7. the act of running; traveling on foot at a fast pace. e.g. he broke into a run; his daily run keeps him fit.
+            8. the continuous period of time during which something (a machine or a factory) operates or continues in operation. e.g. the assembly line was on a 12-hour run.
+            9. unrestricted freedom to use. e.g. he has the run of the house.
+            10. the production achieved during a continuous period of operation (of a machine or factory etc.). e.g. a daily run of 100,000 gallons of paint.
+            11. a small stream.
+            12. a race between candidates for elective office. e.g. I managed his campaign for governor; he is raising money for a Senate run.
+            13. a row of unravelled stitches. e.g. she got a run in her stocking.
+            14. the pouring forth of a fluid.
+            15. an unbroken chronological sequence. e.g. the play had a long run on Broadway; the team enjoyed a brief run of victories.
+            16. a short trip. e.g. take a run into town.
 
             **Synonyms**: campaign, discharge, foot race, footrace, ladder, outpouring, political campaign, ravel, rill, rivulet, runnel, running, running game, running play, streak, streamlet, tally, test, trial
 
             **run** _verb_
-            1. move fast by using one's feet, with one foot off the ground at any given time; "Don't run--you'll be out of breath"; "The children ran to the store"
-            2. flee; take to one's heels; cut and run; "If you see this man, run!"; "The burglars escaped before the police showed up"
-            3. stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point; "Service runs all the way to Cranbury"; "His knowledge doesn't go very far"; "My memory extends back to my fourth year of life"; "The facts extend beyond a consideration of her personal assets"
-            4. direct or control; projects, businesses, etc.; "She is running a relief operation in the Sudan"
-            5. have a particular form; "the story or argument runs as follows"; "as the saying goes..."
-            6. move along, of liquids; "Water flowed into the cave"; "the Missouri feeds into the Mississippi"
-            7. perform as expected when applied; "The washing machine won't go unless it's plugged in"; "Does this old car still run well?"; "This old radio doesn't work anymore"
-            8. change or be different within limits; "Estimates for the losses in the earthquake range as high as $2 billion"; "Interest rates run from 5 to 10 percent"; "The instruments ranged from tuba to cymbals"; "My students range from very bright to dull"
-            9. run, stand, or compete for an office or a position; "Who's running for treasurer this year?"
-            10. cause to emit recorded audio or video; "They ran the tapes over and over again"; "I'll play you my favorite record"; "He never tires of playing that video"
-            11. move about freely and without restraint, or act as if running around in an uncontrolled way; "who are these people running around in the building?"; "She runs around telling everyone of her troubles"; "let the dogs run free"
-            12. have a tendency or disposition to do or be something; be inclined; "She tends to be nervous before her lectures"; "These dresses run small"; "He inclined to corpulence"
-            13. be operating, running or functioning; "The car is still running--turn it off!"
-            14. change from one state to another; "run amok"; "run rogue"; "run riot"
-            15. cause to perform; "run a subject"; "run a process"
-            16. be affected by; be subjected to; "run a temperature"; "run a risk"
-            17. continue to exist; "These stories die hard"; "The legend of Elvis endures"
-            18. occur persistently; "Musical talent runs in the family"
-            19. carry out a process or program, as on a computer or a machine; "Run the dishwasher"; "run a new program on the Mac"; "the computer executed the instruction"
-            20. include as the content; broadcast or publicize; "We ran the ad three times"; "This paper carries a restaurant review"; "All major networks carried the press conference"
-            21. carry out; "run an errand"
-            22. pass over, across, or through; "He ran his eyes over her body"; "She ran her fingers along the carved figurine"; "He drew her hair through his fingers"
-            23. cause something to pass or lead somewhere; "Run the wire behind the cabinet"
-            24. make without a miss
-            25. deal in illegally, such as arms or liquor
-            26. cause an animal to move fast; "run the dogs"
-            27. be diffused; "These dyes and colors are guaranteed not to run"
-            28. sail before the wind
-            29. cover by running; run a certain distance; "She ran 10 miles that day"
-            30. extend or continue for a certain period of time; "The film runs 5 hours"
-            31. set animals loose to graze
-            32. keep company; "the heifers run with the bulls to produce offspring"
-            33. run with the ball; in such sports as football
-            34. travel rapidly, by any (unspecified) means; "Run to the store!"; "She always runs to Italy, because she has a lover there"
-            35. travel a route regularly; "Ships ply the waters near the coast"
-            36. pursue for food or sport (as of wild animals); "Goering often hunted wild boars in Poland"; "The dogs are running deer"; "The Duke hunted in these woods"
-            37. compete in a race; "he is running the Marathon this year"; "let's race and see who gets there first"
-            38. progress by being changed; "The speech has to go through several more drafts"; "run through your presentation before the meeting"
-            39. reduce or cause to be reduced from a solid to a liquid state, usually by heating; "melt butter"; "melt down gold"; "The wax melted in the sun"
-            40. come unraveled or undone as if by snagging; "Her nylons were running"
-            41. become undone; "the sweater unraveled"
+            1. move fast by using one's feet, with one foot off the ground at any given time. e.g. Don't run--you'll be out of breath; The children ran to the store.
+            2. flee; take to one's heels; cut and run. e.g. If you see this man, run!; The burglars escaped before the police showed up.
+            3. stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point. e.g. Service runs all the way to Cranbury; His knowledge doesn't go very far; My memory extends back to my fourth year of life; The facts extend beyond a consideration of her personal assets.
+            4. direct or control; projects, businesses, etc.. e.g. She is running a relief operation in the Sudan.
+            5. have a particular form. e.g. the story or argument runs as follows; as the saying goes....
+            6. move along, of liquids. e.g. Water flowed into the cave; the Missouri feeds into the Mississippi.
+            7. perform as expected when applied. e.g. The washing machine won't go unless it's plugged in; Does this old car still run well?; This old radio doesn't work anymore.
+            8. change or be different within limits. e.g. Estimates for the losses in the earthquake range as high as $2 billion; Interest rates run from 5 to 10 percent; The instruments ranged from tuba to cymbals; My students range from very bright to dull.
+            9. run, stand, or compete for an office or a position. e.g. Who's running for treasurer this year?.
+            10. cause to emit recorded audio or video. e.g. They ran the tapes over and over again; I'll play you my favorite record; He never tires of playing that video.
+            11. move about freely and without restraint, or act as if running around in an uncontrolled way. e.g. who are these people running around in the building?; She runs around telling everyone of her troubles; let the dogs run free.
+            12. have a tendency or disposition to do or be something; be inclined. e.g. She tends to be nervous before her lectures; These dresses run small; He inclined to corpulence.
+            13. be operating, running or functioning. e.g. The car is still running--turn it off!.
+            14. change from one state to another. e.g. run amok; run rogue; run riot.
+            15. cause to perform. e.g. run a subject; run a process.
+            16. be affected by; be subjected to. e.g. run a temperature; run a risk.
+            17. continue to exist. e.g. These stories die hard; The legend of Elvis endures.
+            18. occur persistently. e.g. Musical talent runs in the family.
+            19. carry out a process or program, as on a computer or a machine. e.g. Run the dishwasher; run a new program on the Mac; the computer executed the instruction.
+            20. include as the content; broadcast or publicize. e.g. We ran the ad three times; This paper carries a restaurant review; All major networks carried the press conference.
+            21. carry out. e.g. run an errand.
+            22. pass over, across, or through. e.g. He ran his eyes over her body; She ran her fingers along the carved figurine; He drew her hair through his fingers.
+            23. cause something to pass or lead somewhere. e.g. Run the wire behind the cabinet.
+            24. make without a miss.
+            25. deal in illegally, such as arms or liquor.
+            26. cause an animal to move fast. e.g. run the dogs.
+            27. be diffused. e.g. These dyes and colors are guaranteed not to run.
+            28. sail before the wind.
+            29. cover by running; run a certain distance. e.g. She ran 10 miles that day.
+            30. extend or continue for a certain period of time. e.g. The film runs 5 hours.
+            31. set animals loose to graze.
+            32. keep company. e.g. the heifers run with the bulls to produce offspring.
+            33. run with the ball; in such sports as football.
+            34. travel rapidly, by any (unspecified) means. e.g. Run to the store!; She always runs to Italy, because she has a lover there.
+            35. travel a route regularly. e.g. Ships ply the waters near the coast.
+            36. pursue for food or sport (as of wild animals). e.g. Goering often hunted wild boars in Poland; The dogs are running deer; The Duke hunted in these woods.
+            37. compete in a race. e.g. he is running the Marathon this year; let's race and see who gets there first.
+            38. progress by being changed. e.g. The speech has to go through several more drafts; run through your presentation before the meeting.
+            39. reduce or cause to be reduced from a solid to a liquid state, usually by heating. e.g. melt butter; melt down gold; The wax melted in the sun.
+            40. come unraveled or undone as if by snagging. e.g. Her nylons were running.
+            41. become undone. e.g. the sweater unraveled.
 
             **Synonyms**: be given, black market, bleed, break away, bunk, campaign, carry, consort, course, die hard, draw, endure, escape, execute, extend, feed, flow, fly the coop, function, go, guide, head for the hills, hightail it, hunt, hunt down, incline, ladder, lam, lead, lean, melt, melt down, move, operate, pass, persist, play, ply, prevail, race, range, run away, run for, scarper, scat, take to the woods, tend, track down, turn tail, unravel, work
 
@@ -920,36 +935,36 @@ mod tests {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
         let info = dict.all_info("run");
-        let expected = expect![[r##"
+        let expected = expect![[r#"
             # run
 
-            1. _noun_ a score in baseball made by a runner touching all four bases safely; "the Yankees scored 3 runs in the bottom of the 9th"; "their first tally came in the 3rd inning"
+            1. _noun_ a score in baseball made by a runner touching all four bases safely. e.g. the Yankees scored 3 runs in the bottom of the 9th; their first tally came in the 3rd inning.
             **hypernym**: score
             **hyponym**: earned_run, rbi, run_batted_in, unearned_run
             **synonyms**:
             - tally
 
-            2. _noun_ the act of testing something; "in the experimental trials the amount of carbon was measured separately"; "he called each flip of the coin a new trial"
+            2. _noun_ the act of testing something. e.g. in the experimental trials the amount of carbon was measured separately; he called each flip of the coin a new trial.
             **hypernym**: attempt, effort, endeavor, endeavour, try
             **hyponym**: MOT, MOT_test, Ministry_of_Transportation_test, Snellen_test, assay, audition, clinical_test, clinical_trial, double_blind, field_trial, fitting, pilot_program, pilot_project, preclinical_phase, preclinical_test, preclinical_trial, try-on, trying_on, tryout
             **synonyms**:
             - test
             - trial
 
-            3. _noun_ a race run on foot; "she broke the record for the half-mile run"
+            3. _noun_ a race run on foot. e.g. she broke the record for the half-mile run.
             **hypernym**: race
             **hyponym**: fun_run, funrun, marathon, obstacle_race, steeplechase, track_event
             **synonyms**:
             - foot_race
             - footrace
 
-            4. _noun_ an unbroken series of events; "had a streak of bad luck"; "Nicklaus had a run of birdies"
+            4. _noun_ an unbroken series of events. e.g. had a streak of bad luck; Nicklaus had a run of birdies.
             **hypernym**: succession
             **hyponym**: losing_streak, winning_streak
             **synonyms**:
             - streak
 
-            5. _noun_ (American football) a play in which a player attempts to carry the ball through or past the opposing team; "the defensive line braced to stop the run"; "the coach put great emphasis on running"
+            5. _noun_ (American football) a play in which a player attempts to carry the ball through or past the opposing team. e.g. the defensive line braced to stop the run; the coach put great emphasis on running.
             **domain of synset topic**: American_football, American_football_game
             **hypernym**: football_play
             **hyponym**: draw, draw_play, end_run, return, reverse, rush, rushing, sweep
@@ -959,27 +974,27 @@ mod tests {
             - running_game
             - running_play
 
-            6. _noun_ a regular trip; "the ship made its run in record time"
+            6. _noun_ a regular trip. e.g. the ship made its run in record time.
             **hypernym**: trip
 
-            7. _noun_ the act of running; traveling on foot at a fast pace; "he broke into a run"; "his daily run keeps him fit"
+            7. _noun_ the act of running; traveling on foot at a fast pace. e.g. he broke into a run; his daily run keeps him fit.
             **hypernym**: locomotion, travel
             **hyponym**: dash, sprint
             **synonyms**:
             - running:
               - **derivationally related form**: run
 
-            8. _noun_ the continuous period of time during which something (a machine or a factory) operates or continues in operation; "the assembly line was on a 12-hour run"
+            8. _noun_ the continuous period of time during which something (a machine or a factory) operates or continues in operation. e.g. the assembly line was on a 12-hour run.
             **hypernym**: period, period_of_time, time_period
             **hyponym**: press_run, print_run, run-time
 
-            9. _noun_ unrestricted freedom to use; "he has the run of the house"
+            9. _noun_ unrestricted freedom to use. e.g. he has the run of the house.
             **hypernym**: liberty
 
-            10. _noun_ the production achieved during a continuous period of operation (of a machine or factory etc.); "a daily run of 100,000 gallons of paint"
+            10. _noun_ the production achieved during a continuous period of operation (of a machine or factory etc.). e.g. a daily run of 100,000 gallons of paint.
             **hypernym**: indefinite_quantity
 
-            11. _noun_ a small stream
+            11. _noun_ a small stream.
             **hypernym**: stream, watercourse
             **synonyms**:
             - rill
@@ -988,38 +1003,38 @@ mod tests {
             - streamlet:
               - **derivationally related form**: stream
 
-            12. _noun_ a race between candidates for elective office; "I managed his campaign for governor"; "he is raising money for a Senate run"
+            12. _noun_ a race between candidates for elective office. e.g. I managed his campaign for governor; he is raising money for a Senate run.
             **hypernym**: race
             **hyponym**: campaign_for_governor, governor's_race, senate_campaign, senate_race
             **synonyms**:
             - campaign
             - political_campaign
 
-            13. _noun_ a row of unravelled stitches; "she got a run in her stocking"
+            13. _noun_ a row of unravelled stitches. e.g. she got a run in her stocking.
             **hypernym**: damage, harm, impairment
             **synonyms**:
             - ladder
             - ravel
 
-            14. _noun_ the pouring forth of a fluid
+            14. _noun_ the pouring forth of a fluid.
             **hypernym**: flow, flowing
             **hyponym**: escape, jet, leak, leakage, outflow, spirt, spurt, squirt
             **synonyms**:
             - discharge
             - outpouring
 
-            15. _noun_ an unbroken chronological sequence; "the play had a long run on Broadway"; "the team enjoyed a brief run of victories"
+            15. _noun_ an unbroken chronological sequence. e.g. the play had a long run on Broadway; the team enjoyed a brief run of victories.
             **hypernym**: chronological_sequence, chronological_succession, sequence, succession, successiveness
 
-            16. _noun_ a short trip; "take a run into town"
+            16. _noun_ a short trip. e.g. take a run into town.
             **hypernym**: trip
 
-            17. _verb_ move fast by using one's feet, with one foot off the ground at any given time; "Don't run--you'll be out of breath"; "The children ran to the store"
+            17. _verb_ move fast by using one's feet, with one foot off the ground at any given time. e.g. Don't run--you'll be out of breath; The children ran to the store.
             **hypernym**: hurry, speed, travel_rapidly, zip
             **hyponym**: clip, hare, jog, lope, outrun, romp, run, run_bases, rush, scamper, scurry, scuttle, skitter, sprint, streak, trot
             **verb group**: run
 
-            18. _verb_ flee; take to one's heels; cut and run; "If you see this man, run!"; "The burglars escaped before the police showed up"
+            18. _verb_ flee; take to one's heels; cut and run. e.g. If you see this man, run!; The burglars escaped before the police showed up.
             **hypernym**: go_away, go_forth, leave
             **hyponym**: flee, fly, skedaddle, take_flight
             **synonyms**:
@@ -1037,7 +1052,7 @@ mod tests {
             - take_to_the_woods
             - turn_tail
 
-            19. _verb_ stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point; "Service runs all the way to Cranbury"; "His knowledge doesn't go very far"; "My memory extends back to my fourth year of life"; "The facts extend beyond a consideration of her personal assets"
+            19. _verb_ stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point. e.g. Service runs all the way to Cranbury; His knowledge doesn't go very far; My memory extends back to my fourth year of life; The facts extend beyond a consideration of her personal assets.
             **hypernym**: be
             **hyponym**: come, go_deep, go_far, radiate, ray
             **verb group**: range, run
@@ -1049,19 +1064,19 @@ mod tests {
             - lead
             - pass
 
-            20. _verb_ direct or control; projects, businesses, etc.; "She is running a relief operation in the Sudan"
+            20. _verb_ direct or control; projects, businesses, etc.. e.g. She is running a relief operation in the Sudan.
             **hypernym**: direct
             **hyponym**: block, financier, warm_up, work
             **synonyms**:
             - operate:
               - **derivationally related form**: operator
 
-            21. _verb_ have a particular form; "the story or argument runs as follows"; "as the saying goes..."
+            21. _verb_ have a particular form. e.g. the story or argument runs as follows; as the saying goes....
             **hypernym**: be
             **synonyms**:
             - go
 
-            22. _verb_ move along, of liquids; "Water flowed into the cave"; "the Missouri feeds into the Mississippi"
+            22. _verb_ move along, of liquids. e.g. Water flowed into the cave; the Missouri feeds into the Mississippi.
             **hypernym**: move
             **hyponym**: circulate, drain, dribble, eddy, filter, flush, gush, gutter, jet, ooze, pour, purl, run_down, run_off, run_out, seep, spill, stream, surge, swirl, tide, trickle, waste, well_out, whirl, whirlpool
             **synonyms**:
@@ -1071,7 +1086,7 @@ mod tests {
               - **derivationally related form**: flowing
               - **also see**: flow_from
 
-            23. _verb_ perform as expected when applied; "The washing machine won't go unless it's plugged in"; "Does this old car still run well?"; "This old radio doesn't work anymore"
+            23. _verb_ perform as expected when applied. e.g. The washing machine won't go unless it's plugged in; Does this old car still run well?; This old radio doesn't work anymore.
             **hyponym**: cut, double, roll, run, serve, service
             **verb group**: run, work
             **synonyms**:
@@ -1083,29 +1098,29 @@ mod tests {
               - **derivationally related form**: operation
             - work
 
-            24. _verb_ change or be different within limits; "Estimates for the losses in the earthquake range as high as $2 billion"; "Interest rates run from 5 to 10 percent"; "The instruments ranged from tuba to cymbals"; "My students range from very bright to dull"
+            24. _verb_ change or be different within limits. e.g. Estimates for the losses in the earthquake range as high as $2 billion; Interest rates run from 5 to 10 percent; The instruments ranged from tuba to cymbals; My students range from very bright to dull.
             **hypernym**: be
             **verb group**: extend, go, lead, pass, run
             **synonyms**:
             - range
 
-            25. _verb_ run, stand, or compete for an office or a position; "Who's running for treasurer this year?"
+            25. _verb_ run, stand, or compete for an office or a position. e.g. Who's running for treasurer this year?.
             **hypernym**: race, run
             **hyponym**: cross-file, register, rerun, stump, whistlestop
             **synonyms**:
             - campaign:
               - **derivationally related form**: campaigner
 
-            26. _verb_ cause to emit recorded audio or video; "They ran the tapes over and over again"; "I'll play you my favorite record"; "He never tires of playing that video"
+            26. _verb_ cause to emit recorded audio or video. e.g. They ran the tapes over and over again; I'll play you my favorite record; He never tires of playing that video.
             **verb group**: execute, play, run
             **synonyms**:
             - play
 
-            27. _verb_ move about freely and without restraint, or act as if running around in an uncontrolled way; "who are these people running around in the building?"; "She runs around telling everyone of her troubles"; "let the dogs run free"
+            27. _verb_ move about freely and without restraint, or act as if running around in an uncontrolled way. e.g. who are these people running around in the building?; She runs around telling everyone of her troubles; let the dogs run free.
             **hypernym**: go, locomote, move, travel
             **verb group**: run
 
-            28. _verb_ have a tendency or disposition to do or be something; be inclined; "She tends to be nervous before her lectures"; "These dresses run small"; "He inclined to corpulence"
+            28. _verb_ have a tendency or disposition to do or be something; be inclined. e.g. She tends to be nervous before her lectures; These dresses run small; He inclined to corpulence.
             **hypernym**: be
             **hyponym**: gravitate, suffer, take_kindly_to
             **synonyms**:
@@ -1116,22 +1131,22 @@ mod tests {
             - tend:
               - **derivationally related form**: tendency
 
-            29. _verb_ be operating, running or functioning; "The car is still running--turn it off!"
+            29. _verb_ be operating, running or functioning. e.g. The car is still running--turn it off!.
             **hypernym**: function, go, operate, run, work
             **verb group**: function, go, operate, run, work
 
-            30. _verb_ change from one state to another; "run amok"; "run rogue"; "run riot"
+            30. _verb_ change from one state to another. e.g. run amok; run rogue; run riot.
             **hypernym**: become, get, go
 
-            31. _verb_ cause to perform; "run a subject"; "run a process"
+            31. _verb_ cause to perform. e.g. run a subject; run a process.
             **hypernym**: process, treat
             **hyponym**: rerun
             **verb group**: play, run
 
-            32. _verb_ be affected by; be subjected to; "run a temperature"; "run a risk"
+            32. _verb_ be affected by; be subjected to. e.g. run a temperature; run a risk.
             **hypernym**: incur
 
-            33. _verb_ continue to exist; "These stories die hard"; "The legend of Elvis endures"
+            33. _verb_ continue to exist. e.g. These stories die hard; The legend of Elvis endures.
             **hypernym**: continue
             **hyponym**: carry_over, reverberate
             **verb group**: run
@@ -1144,11 +1159,11 @@ mod tests {
             - prevail:
               - **derivationally related form**: prevalent
 
-            34. _verb_ occur persistently; "Musical talent runs in the family"
+            34. _verb_ occur persistently. e.g. Musical talent runs in the family.
             **hypernym**: occur
             **verb group**: die_hard, endure, persist, prevail, run
 
-            35. _verb_ carry out a process or program, as on a computer or a machine; "Run the dishwasher"; "run a new program on the Mac"; "the computer executed the instruction"
+            35. _verb_ carry out a process or program, as on a computer or a machine. e.g. Run the dishwasher; run a new program on the Mac; the computer executed the instruction.
             **hypernym**: apply, enforce, implement
             **hyponym**: step
             **verb group**: play, run
@@ -1156,15 +1171,15 @@ mod tests {
             - execute:
               - **derivationally related form**: executive
 
-            36. _verb_ include as the content; broadcast or publicize; "We ran the ad three times"; "This paper carries a restaurant review"; "All major networks carried the press conference"
+            36. _verb_ include as the content; broadcast or publicize. e.g. We ran the ad three times; This paper carries a restaurant review; All major networks carried the press conference.
             **hypernym**: broadcast, circularise, circularize, circulate, diffuse, disperse, disseminate, distribute, pass_around, propagate, spread
             **synonyms**:
             - carry
 
-            37. _verb_ carry out; "run an errand"
+            37. _verb_ carry out. e.g. run an errand.
             **hypernym**: accomplish, action, carry_out, carry_through, execute, fulfil, fulfill
 
-            38. _verb_ pass over, across, or through; "He ran his eyes over her body"; "She ran her fingers along the carved figurine"; "He drew her hair through his fingers"
+            38. _verb_ pass over, across, or through. e.g. He ran his eyes over her body; She ran her fingers along the carved figurine; He drew her hair through his fingers.
             **hyponym**: rub, thread
             **verb group**: draw, lead, run, string, thread
             **synonyms**:
@@ -1173,71 +1188,71 @@ mod tests {
             - pass:
               - **also see**: pass_around
 
-            39. _verb_ cause something to pass or lead somewhere; "Run the wire behind the cabinet"
+            39. _verb_ cause something to pass or lead somewhere. e.g. Run the wire behind the cabinet.
             **hypernym**: make_pass, pass
             **verb group**: draw, guide, pass, range, run
             **synonyms**:
             - lead
 
-            40. _verb_ make without a miss
+            40. _verb_ make without a miss.
             **domain of synset topic**: athletics, sport
             **hypernym**: bring_home_the_bacon, come_through, deliver_the_goods, succeed, win
 
-            41. _verb_ deal in illegally, such as arms or liquor
+            41. _verb_ deal in illegally, such as arms or liquor.
             **domain of synset topic**: crime, criminal_offence, criminal_offense, law-breaking, offence, offense
             **hypernym**: merchandise, trade
             **verb group**: ply, run
             **synonyms**:
             - black_market
 
-            42. _verb_ cause an animal to move fast; "run the dogs"
+            42. _verb_ cause an animal to move fast. e.g. run the dogs.
             **hypernym**: displace, move
             **verb group**: hunt, hunt_down, run, track_down
 
-            43. _verb_ be diffused; "These dyes and colors are guaranteed not to run"
+            43. _verb_ be diffused. e.g. These dyes and colors are guaranteed not to run.
             **hypernym**: diffuse, fan_out, spread, spread_out
             **hyponym**: crock
             **verb group**: melt, melt_down, run
             **synonyms**:
             - bleed
 
-            44. _verb_ sail before the wind
+            44. _verb_ sail before the wind.
             **hypernym**: sail
 
-            45. _verb_ cover by running; run a certain distance; "She ran 10 miles that day"
+            45. _verb_ cover by running; run a certain distance. e.g. She ran 10 miles that day.
             **hypernym**: go_across, go_through, pass
             **verb group**: run
 
-            46. _verb_ extend or continue for a certain period of time; "The film runs 5 hours"
+            46. _verb_ extend or continue for a certain period of time. e.g. The film runs 5 hours.
             **hypernym**: endure, last
             **synonyms**:
             - run_for
 
-            47. _verb_ set animals loose to graze
+            47. _verb_ set animals loose to graze.
             **hypernym**: free, liberate, loose, release, unloose, unloosen
             **verb group**: run
 
-            48. _verb_ keep company; "the heifers run with the bulls to produce offspring"
+            48. _verb_ keep company. e.g. the heifers run with the bulls to produce offspring.
             **hypernym**: accompany
             **synonyms**:
             - consort
 
-            49. _verb_ run with the ball; in such sports as football
+            49. _verb_ run with the ball; in such sports as football.
             **domain of synset topic**: athletics, sport
             **hypernym**: run
 
-            50. _verb_ travel rapidly, by any (unspecified) means; "Run to the store!"; "She always runs to Italy, because she has a lover there"
+            50. _verb_ travel rapidly, by any (unspecified) means. e.g. Run to the store!; She always runs to Italy, because she has a lover there.
             **hypernym**: go, locomote, move, travel
             **verb group**: run
 
-            51. _verb_ travel a route regularly; "Ships ply the waters near the coast"
+            51. _verb_ travel a route regularly. e.g. Ships ply the waters near the coast.
             **hypernym**: jaunt, travel, trip
             **verb group**: black_market, run
             **synonyms**:
             - ply:
               - **derivationally related form**: plier
 
-            52. _verb_ pursue for food or sport (as of wild animals); "Goering often hunted wild boars in Poland"; "The dogs are running deer"; "The Duke hunted in these woods"
+            52. _verb_ pursue for food or sport (as of wild animals). e.g. Goering often hunted wild boars in Poland; The dogs are running deer; The Duke hunted in these woods.
             **hypernym**: capture, catch
             **hyponym**: ambush, course, drive, falcon, ferret, forage, fowl, foxhunt, hawk, jack, jacklight, poach, rabbit, scrounge, seal, snipe, still-hunt, turtle, whale
             **verb group**: hunt, run
@@ -1247,20 +1262,20 @@ mod tests {
             - hunt_down
             - track_down
 
-            53. _verb_ compete in a race; "he is running the Marathon this year"; "let's race and see who gets there first"
+            53. _verb_ compete in a race. e.g. he is running the Marathon this year; let's race and see who gets there first.
             **hypernym**: compete, contend, vie
             **hyponym**: boat-race, campaign, horse-race, place, run, show, speed_skate
             **synonyms**:
             - race:
               - **derivationally related form**: racing
 
-            54. _verb_ progress by being changed; "The speech has to go through several more drafts"; "run through your presentation before the meeting"
+            54. _verb_ progress by being changed. e.g. The speech has to go through several more drafts; run through your presentation before the meeting.
             **hypernym**: change
             **synonyms**:
             - go
             - move
 
-            55. _verb_ reduce or cause to be reduced from a solid to a liquid state, usually by heating; "melt butter"; "melt down gold"; "The wax melted in the sun"
+            55. _verb_ reduce or cause to be reduced from a solid to a liquid state, usually by heating. e.g. melt butter; melt down gold; The wax melted in the sun.
             **hypernym**: break_up, dissolve, resolve
             **hyponym**: fuse, render, try
             **verb group**: bleed, run
@@ -1269,19 +1284,19 @@ mod tests {
               - **derivationally related form**: melting
             - melt_down
 
-            56. _verb_ come unraveled or undone as if by snagging; "Her nylons were running"
+            56. _verb_ come unraveled or undone as if by snagging. e.g. Her nylons were running.
             **hypernym**: break, come_apart, fall_apart, separate, split_up
             **verb group**: run, unravel
             **synonyms**:
             - ladder
 
-            57. _verb_ become undone; "the sweater unraveled"
+            57. _verb_ become undone. e.g. the sweater unraveled.
             **hypernym**: disintegrate
             **verb group**: ladder, run
             **synonyms**:
             - unravel:
               - **derivationally related form**: unraveller
-        "##]];
+        "#]];
         expected.assert_eq(&info);
     }
 }

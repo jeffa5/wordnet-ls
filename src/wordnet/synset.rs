@@ -9,6 +9,8 @@ pub struct SynSet {
     pub lemmas: Vec<Lemma>,
     /// Glossary entry.
     pub definition: String,
+    /// Example uses.
+    pub examples: Vec<String>,
     /// What type of word it is.
     pub part_of_speech: PartOfSpeech,
     /// How it relates to other synsets.
