@@ -36,7 +36,7 @@ impl Index {
 
         let poses = pos
             .map(|p| vec![p])
-            .unwrap_or_else(|| PartOfSpeech::iter().collect());
+            .unwrap_or_else(|| PartOfSpeech::variants().to_vec());
         for pos in poses {
             if let Some(i) = self.search(pos, word) {
                 items.push(i)
