@@ -131,7 +131,7 @@ fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) 
     if !init_opts.enable_hover.unwrap_or(true) {
         caps.hover_provider = None;
     }
-    if !init_opts.enable_code_action.unwrap_or(true) {
+    if !init_opts.enable_code_actions.unwrap_or(true) {
         caps.code_action_provider = None;
         caps.execute_command_provider = None;
     }
@@ -163,7 +163,7 @@ struct InitializationOptions {
     wordnet: PathBuf,
     enable_completion: Option<bool>,
     enable_hover: Option<bool>,
-    enable_code_action: Option<bool>,
+    enable_code_actions: Option<bool>,
     enable_goto_definition: Option<bool>,
 }
 
