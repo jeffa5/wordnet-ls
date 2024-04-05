@@ -1,8 +1,8 @@
 use data::Data;
 use index::Index;
 pub use pos::PartOfSpeech;
-pub use relation::SemanticRelation;
 pub use relation::LexicalRelation;
+pub use relation::SemanticRelation;
 use std::path::PathBuf;
 pub use synset::SynSet;
 
