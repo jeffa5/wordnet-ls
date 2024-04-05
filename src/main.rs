@@ -1299,4 +1299,19 @@ mod tests {
         "#]];
         expected.assert_eq(&info);
     }
+
+    #[test]
+    fn all_info_all_words() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let len = dict
+            .all_words
+            .iter()
+            .map(|w| dict.all_info(w).len())
+            .sum::<usize>();
+        let expected = expect![[r#"
+            49494379
+        "#]];
+        expected.assert_debug_eq(&len);
+    }
 }
