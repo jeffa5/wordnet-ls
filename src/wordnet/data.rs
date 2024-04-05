@@ -1,5 +1,6 @@
 use super::pos::PartOfSpeech;
 use super::relation::Relation;
+use super::relation::RelationKind;
 use super::synset::Relationship;
 use super::synset::SynSet;
 use std::fs::File;
@@ -52,7 +53,7 @@ impl SynSet {
                         let pointers = rest.iter().take(p_cnt * 4).collect::<Vec<_>>();
                         let mut relationships = Vec::new();
                         for chunk in pointers.chunks(4) {
-                            let [pointer_symbol, synset_offset, part_of_speech, _source_target] =
+                            let [pointer_symbol, synset_offset, part_of_speech, source_target] =
                                 chunk
                             else {
                                 panic!("invalid chunk")
@@ -61,10 +62,19 @@ impl SynSet {
                             let synset_offset = synset_offset.parse::<u64>().unwrap();
                             let part_of_speech =
                                 PartOfSpeech::try_from_str(part_of_speech).unwrap();
+                            let relation_type = if ***source_target == "0000" {
+                                RelationKind::Semantic
+                            } else {
+                                let (source, target) = source_target.split_at(2);
+                                let source = source.parse::<u32>().unwrap();
+                                let target = target.parse::<u32>().unwrap();
+                                RelationKind::Lexical(source - 1, target - 1)
+                            };
                             relationships.push(Relationship {
                                 relation: pointer_type,
                                 synset_offset,
                                 part_of_speech,
+                                kind: relation_type
                             });
                         }
                         let rest: Vec<_> = rest.iter().skip(p_cnt * 4).collect();

@@ -125,3 +125,11 @@ impl Display for Relation {
         f.write_str(s)
     }
 }
+
+#[derive(Debug)]
+pub enum RelationKind {
+    /// A semantic relationship between synsets.
+    Semantic,
+    /// A lexical relationship between words in synsets.
+    Lexical(u32, u32)
+}

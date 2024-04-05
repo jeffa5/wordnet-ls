@@ -1,4 +1,4 @@
-use super::{relation::Relation, PartOfSpeech, WordNet};
+use super::{relation::{Relation, RelationKind}, PartOfSpeech, WordNet};
 
 #[derive(Debug)]
 pub struct SynSet {
@@ -20,6 +20,8 @@ pub struct Relationship {
     pub synset_offset: u64,
     /// File to look in.
     pub part_of_speech: PartOfSpeech,
+    /// Kind of relationship to other synset.
+    pub kind: RelationKind,
 }
 
 impl SynSet {
