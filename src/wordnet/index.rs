@@ -32,10 +32,13 @@ impl Index {
         Index { files, mmaps }
     }
 
-    pub fn load(&self, word: &str) -> Vec<IndexItem> {
+    pub fn load(&self, word: &str, pos: Option<PartOfSpeech>) -> Vec<IndexItem> {
         let mut items = Vec::new();
 
-        for pos in PartOfSpeech::iter() {
+        let poses = pos
+            .map(|p| vec![p])
+            .unwrap_or_else(|| PartOfSpeech::iter().collect());
+        for pos in poses {
             if let Some(i) = self.search(pos, word) {
                 items.push(i)
             }

@@ -48,7 +48,24 @@ impl WordNet {
 
     pub fn synsets(&self, word: &str) -> Vec<SynSet> {
         let word = word.to_lowercase();
-        let items = self.index.load(&word);
+        let items = self.index.load(&word, None);
+        let mut synsets = Vec::new();
+
+        for item in items {
+            for offset in item.syn_offsets.iter() {
+                let synset = self.data.load(&self.database, *offset, item.pos);
+                if let Some(synset) = synset {
+                    synsets.push(synset);
+                }
+            }
+        }
+
+        synsets
+    }
+
+    pub fn synsets_in(&self, word: &str, pos: PartOfSpeech) -> Vec<SynSet> {
+        let word = word.to_lowercase();
+        let items = self.index.load(&word, Some(pos));
         let mut synsets = Vec::new();
 
         for item in items {
