@@ -4,7 +4,6 @@ use super::pos::PartOfSpeech;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufRead;
-use std::io::BufReader;
 use std::path::Path;
 
 #[derive(Default, Debug)]
@@ -118,15 +117,10 @@ impl Index {
         None
     }
 
-    pub fn words_for(&self, dir: &Path, pos: PartOfSpeech) -> Vec<String> {
-        let p = dir.join("index").with_extension(pos.as_suffix());
-        let file = match File::open(p) {
-            Ok(file) => file,
-            Err(_) => return Vec::new(),
-        };
-        let reader = BufReader::new(file);
+    pub fn words_for(&self, pos: PartOfSpeech) -> Vec<String> {
+        let map = self.mmaps.get(&pos).unwrap();
         let mut results = Vec::new();
-        for l in reader.lines() {
+        for l in map.lines() {
             match l {
                 Err(_) => continue,
                 Ok(l) => {

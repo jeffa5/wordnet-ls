@@ -33,14 +33,10 @@ impl WordNet {
         self.data.load(&self.database, offset, part_of_speech)
     }
 
-    pub fn iter_words(&self, part_of_speech: PartOfSpeech) -> Vec<String> {
-        self.index.words_for(&self.database, part_of_speech)
-    }
-
     pub fn all_words(&self) -> Vec<String> {
         let mut result = Vec::new();
         for pos in PartOfSpeech::iter() {
-            result.append(&mut self.index.words_for(&self.database, pos))
+            result.append(&mut self.index.words_for(pos))
         }
         result.sort_unstable();
         result.dedup();
