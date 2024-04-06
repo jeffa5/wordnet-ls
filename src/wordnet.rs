@@ -50,6 +50,10 @@ impl WordNet {
         result
     }
 
+    pub fn lemmatize_for(&self, word: &str, pos: PartOfSpeech) -> Vec<String> {
+        self.lemmatizer.lemmatize(word, pos, &self.index)
+    }
+
     pub fn synsets(&self, word: &str) -> Vec<SynSet> {
         let word = word.to_lowercase();
         let items = self.index.load(&word, None);
