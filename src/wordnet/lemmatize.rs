@@ -7,6 +7,7 @@ use memmap::Mmap;
 use super::{index::Index, utils, PartOfSpeech};
 
 pub struct Lemmatizer {
+    #[allow(dead_code)]
     exceptions: BTreeMap<PartOfSpeech, File>,
     maps: BTreeMap<PartOfSpeech, Mmap>,
 }
