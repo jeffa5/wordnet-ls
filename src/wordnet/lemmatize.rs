@@ -1,14 +1,53 @@
 // https://wordnet.princeton.edu/documentation/morphy7wn
 
-use std::path::Path;
+use std::{collections::BTreeMap, fs::File, io::BufRead, path::Path};
+
+use memmap::Mmap;
 
 use super::{index::Index, PartOfSpeech};
 
-pub struct Lemmatizer {}
+pub struct Lemmatizer {
+    exceptions: BTreeMap<PartOfSpeech, File>,
+    maps: BTreeMap<PartOfSpeech, Mmap>,
+}
 
 impl Lemmatizer {
-    pub fn new(_dir: &Path) -> Self {
-        Self {}
+    pub fn new(dir: &Path) -> Self {
+        let mut exception_files = BTreeMap::new();
+        let mut maps = BTreeMap::new();
+        for pos in PartOfSpeech::variants() {
+            let file = Self::get_file(dir, pos);
+            maps.insert(pos, unsafe { Mmap::map(&file).unwrap() });
+            exception_files.insert(pos, file);
+        }
+        Self {
+            exceptions: exception_files,
+            maps,
+        }
+    }
+
+    fn get_file(dir: &Path, pos: PartOfSpeech) -> File {
+        let p = dir.join(pos.as_suffix()).with_extension("exc");
+        File::open(p).unwrap()
+    }
+
+    fn exceptions_for(&self, index: &Index, word: &str, pos: PartOfSpeech) -> Vec<String> {
+        // TODO: use a binary search in the mmap for this
+        let mut results = Vec::new();
+        for line in self.maps.get(&pos).unwrap().lines() {
+            let line = line.unwrap();
+            let mut parts = line.split_whitespace();
+            let first = parts.next().unwrap();
+            if first == word {
+                for base_form in parts {
+                    // not all base forms exist in word net so don't include them
+                    if index.contains(base_form, pos) {
+                        results.push(base_form.to_owned());
+                    }
+                }
+            }
+        }
+        results
     }
 
     pub fn lemmatize(
@@ -21,12 +60,15 @@ impl Lemmatizer {
             PartOfSpeech::Noun => self.lemmatize_noun(word, index),
             PartOfSpeech::Verb => self.lemmatize_verb(word, index),
             PartOfSpeech::Adjective => self.lemmatize_adjective(word, index),
-            PartOfSpeech::Adverb => Vec::new(),
+            PartOfSpeech::Adverb => self.lemmatize_adverb(word, index),
         }
     }
 
     fn lemmatize_noun(&self, word: &str, index: &Index) -> Vec<String> {
-        let mut results = Vec::new();
+        let mut results = self.exceptions_for(index, word, PartOfSpeech::Noun);
+        if index.contains(word, PartOfSpeech::Noun) {
+            results.push(word.to_owned());
+        }
         macro_rules! strip_add_search {
             ($suffix:expr, $ending:expr) => {
                 if let Some(detached) = word.strip_suffix($suffix) {
@@ -46,11 +88,16 @@ impl Lemmatizer {
         strip_add_search!("shes", "sh");
         strip_add_search!("men", "man");
         strip_add_search!("ies", "y");
+        results.sort_unstable();
+        results.dedup();
         results
     }
 
     fn lemmatize_verb(&self, word: &str, index: &Index) -> Vec<String> {
-        let mut results = Vec::new();
+        let mut results = self.exceptions_for(index, word, PartOfSpeech::Verb);
+        if index.contains(word, PartOfSpeech::Verb) {
+            results.push(word.to_owned());
+        }
         macro_rules! strip_add_search {
             ($suffix:expr, $ending:expr) => {
                 if let Some(detached) = word.strip_suffix($suffix) {
@@ -70,11 +117,16 @@ impl Lemmatizer {
         strip_add_search!("ed", "");
         strip_add_search!("ing", "e");
         strip_add_search!("ing", "");
+        results.sort_unstable();
+        results.dedup();
         results
     }
 
     fn lemmatize_adjective(&self, word: &str, index: &Index) -> Vec<String> {
-        let mut results = Vec::new();
+        let mut results = self.exceptions_for(index, word, PartOfSpeech::Adjective);
+        if index.contains(word, PartOfSpeech::Adjective) {
+            results.push(word.to_owned());
+        }
         macro_rules! strip_add_search {
             ($suffix:expr, $ending:expr) => {
                 if let Some(detached) = word.strip_suffix($suffix) {
@@ -90,6 +142,18 @@ impl Lemmatizer {
         strip_add_search!("est", "");
         strip_add_search!("er", "e");
         strip_add_search!("est", "e");
+        results.sort_unstable();
+        results.dedup();
+        results
+    }
+
+    fn lemmatize_adverb(&self, word: &str, index: &Index) -> Vec<String> {
+        let mut results = self.exceptions_for(index, word, PartOfSpeech::Adverb);
+        if index.contains(word, PartOfSpeech::Adverb) {
+            results.push(word.to_owned());
+        }
+        results.sort_unstable();
+        results.dedup();
         results
     }
 }
@@ -156,8 +220,9 @@ mod tests {
             PartOfSpeech::Noun,
             expect![[r#"
                 [
-                    "axe",
                     "ax",
+                    "axe",
+                    "axis",
                 ]
             "#]],
         );
@@ -165,8 +230,25 @@ mod tests {
 
     #[test]
     fn lemmatize_none() {
-        check("unknownword", PartOfSpeech::Noun, expect![[r#"
+        check(
+            "unknownword",
+            PartOfSpeech::Noun,
+            expect![[r#"
             []
-        "#]]);
+        "#]],
+        );
+    }
+
+    #[test]
+    fn exception_flamingoes() {
+        check(
+            "flamingoes",
+            PartOfSpeech::Noun,
+            expect![[r#"
+                [
+                    "flamingo",
+                ]
+            "#]],
+        );
     }
 }
