@@ -71,7 +71,7 @@ impl WordNet {
         synsets
     }
 
-    pub fn synsets_in(&self, word: &str, pos: PartOfSpeech) -> Vec<SynSet> {
+    pub fn synsets_for(&self, word: &str, pos: PartOfSpeech) -> Vec<SynSet> {
         let word = word.to_lowercase();
         let items = self.index.load(&word, Some(pos));
         let mut synsets = Vec::new();
