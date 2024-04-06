@@ -236,21 +236,28 @@ impl Server {
 
                             let response = match self.get_word(&tdp) {
                                 Some(w) => {
-                                    let text = self.dict.hover(&w);
-                                    let resp = lsp_types::Hover {
-                                        contents: lsp_types::HoverContents::Markup(
-                                            lsp_types::MarkupContent {
-                                                kind: lsp_types::MarkupKind::Markdown,
-                                                value: text,
-                                            },
-                                        ),
-                                        range: None,
-                                    };
-                                    Message::Response(Response {
-                                        id: r.id,
-                                        result: Some(serde_json::to_value(resp).unwrap()),
-                                        error: None,
-                                    })
+                                    if let Some(text) = self.dict.hover(&w) {
+                                        let resp = lsp_types::Hover {
+                                            contents: lsp_types::HoverContents::Markup(
+                                                lsp_types::MarkupContent {
+                                                    kind: lsp_types::MarkupKind::Markdown,
+                                                    value: text,
+                                                },
+                                            ),
+                                            range: None,
+                                        };
+                                        Message::Response(Response {
+                                            id: r.id,
+                                            result: Some(serde_json::to_value(resp).unwrap()),
+                                            error: None,
+                                        })
+                                    } else {
+                                        Message::Response(Response {
+                                            id: r.id,
+                                            result: None,
+                                            error: None,
+                                        })
+                                    }
                                 }
                                 None => Message::Response(Response {
                                     id: r.id,
@@ -349,18 +356,25 @@ impl Server {
                                 serde_json::from_value::<lsp_types::CompletionItem>(r.params)
                                     .unwrap();
 
-                            let doc = self.dict.hover(&ci.label);
-                            ci.documentation = Some(lsp_types::Documentation::MarkupContent(
-                                lsp_types::MarkupContent {
-                                    kind: lsp_types::MarkupKind::Markdown,
-                                    value: doc,
-                                },
-                            ));
-                            let response = Message::Response(Response {
-                                id: r.id,
-                                result: serde_json::to_value(ci).ok(),
-                                error: None,
-                            });
+                            let response = if let Some(doc) = self.dict.hover(&ci.label) {
+                                ci.documentation = Some(lsp_types::Documentation::MarkupContent(
+                                    lsp_types::MarkupContent {
+                                        kind: lsp_types::MarkupKind::Markdown,
+                                        value: doc,
+                                    },
+                                ));
+                                Message::Response(Response {
+                                    id: r.id,
+                                    result: serde_json::to_value(ci).ok(),
+                                    error: None,
+                                })
+                            } else {
+                                Message::Response(Response {
+                                    id: r.id,
+                                    result: None,
+                                    error: None,
+                                })
+                            };
 
                             c.sender.send(response).unwrap()
                         }
@@ -620,9 +634,12 @@ impl Dict {
         }
     }
 
-    fn hover(&self, word: &str) -> String {
+    fn hover(&self, word: &str) -> Option<String> {
         let synsets = self.wordnet.synsets(word);
-        self.render_hover(word, synsets)
+        if synsets.is_empty() {
+            return None;
+        }
+        Some(self.render_hover(word, synsets))
     }
 
     fn render_hover(&self, word: &str, synsets: Vec<SynSet>) -> String {
