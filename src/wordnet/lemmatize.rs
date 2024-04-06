@@ -1,6 +1,6 @@
 // https://wordnet.princeton.edu/documentation/morphy7wn
 
-use std::{collections::BTreeMap, fs::File, io::BufRead, path::Path};
+use std::{collections::BTreeMap, fs::File, path::Path};
 
 use memmap::Mmap;
 

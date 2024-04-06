@@ -50,6 +50,16 @@ impl WordNet {
         result
     }
 
+    pub fn lemmatize(&self, word: &str) -> Vec<String> {
+        let mut lemmas = PartOfSpeech::variants()
+            .into_iter()
+            .flat_map(|pos| self.lemmatizer.lemmatize(word, pos, &self.index))
+            .collect::<Vec<_>>();
+        lemmas.sort_unstable();
+        lemmas.dedup();
+        lemmas
+    }
+
     pub fn lemmatize_for(&self, word: &str, pos: PartOfSpeech) -> Vec<String> {
         self.lemmatizer.lemmatize(word, pos, &self.index)
     }

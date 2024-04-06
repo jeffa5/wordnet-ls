@@ -635,11 +635,17 @@ impl Dict {
     }
 
     fn hover(&self, word: &str) -> Option<String> {
-        let synsets = self.wordnet.synsets(word);
-        if synsets.is_empty() {
+        let lemmas = self.wordnet.lemmatize(word);
+        if lemmas.is_empty() {
             return None;
         }
-        Some(self.render_hover(word, synsets))
+        let mut content = String::new();
+        for lemma in lemmas {
+            let synsets = self.wordnet.synsets(&lemma);
+            let hover = self.render_hover(&lemma, synsets);
+            writeln!(content, "{hover}\n").unwrap();
+        }
+        Some(content.trim().to_owned())
     }
 
     fn render_hover(&self, word: &str, synsets: Vec<SynSet>) -> String {
@@ -720,99 +726,104 @@ impl Dict {
     }
 
     fn all_info(&self, word: &str) -> Option<String> {
-        let synsets = self.wordnet.synsets(word);
-        if synsets.is_empty() {
+        let lemmas = self.wordnet.lemmatize(word);
+        if lemmas.is_empty() {
             return None;
         }
         let mut content = String::new();
-        writeln!(content, "# {word}").unwrap();
-        for (i, synset) in synsets.into_iter().enumerate() {
-            let definition = synset.definition;
-            let pos = synset.part_of_speech.to_string();
+        for lemma in lemmas {
+            let synsets = self.wordnet.synsets(&lemma);
+            writeln!(content, "# {lemma}").unwrap();
+            for (i, synset) in synsets.into_iter().enumerate() {
+                let definition = synset.definition;
+                let pos = synset.part_of_speech.to_string();
 
-            let i = i + 1;
-            write!(content, "\n{i}. _{pos}_ {definition}.").unwrap();
-            let examples = synset.examples.join("; ");
-            if !examples.is_empty() {
-                writeln!(content, " e.g. {examples}.").unwrap();
-            } else {
-                writeln!(content).unwrap();
+                let i = i + 1;
+                write!(content, "\n{i}. _{pos}_ {definition}.").unwrap();
+                let examples = synset.examples.join("; ");
+                if !examples.is_empty() {
+                    writeln!(content, " e.g. {examples}.").unwrap();
+                } else {
+                    writeln!(content).unwrap();
+                }
+
+                let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> =
+                    BTreeMap::new();
+                for r in synset.relationships {
+                    relationships.entry(r.relation).or_default().extend(
+                        self.wordnet
+                            .resolve(r.part_of_speech, r.synset_offset)
+                            .unwrap()
+                            .synonyms(),
+                    );
+                }
+                let relationships = relationships
+                    .into_iter()
+                    .map(|(r, w)| (r.to_string(), w))
+                    .collect::<BTreeMap<_, _>>();
+                let relationships_str = relationships
+                    .into_iter()
+                    .map(|(relation, words)| {
+                        format!(
+                            "**{relation}**: {}",
+                            words.into_iter().collect::<Vec<_>>().join(", ")
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                if !relationships_str.is_empty() {
+                    writeln!(content, "{relationships_str}").unwrap()
+                }
+
+                let lemma_relationships = synset
+                    .lemmas
+                    .iter()
+                    .filter(|l| l.word != lemma)
+                    .map(|l| {
+                        (
+                            l.word.clone(),
+                            l.relationships
+                                .iter()
+                                .map(|lr| {
+                                    (
+                                        lr.relation,
+                                        self.wordnet
+                                            .resolve(lr.part_of_speech, lr.synset_offset)
+                                            .unwrap()
+                                            .synonyms()[lr.target]
+                                            .clone(),
+                                    )
+                                })
+                                .filter(|(_, w)| *w != l.word)
+                                .collect::<BTreeMap<LexicalRelation, String>>(),
+                        )
+                    })
+                    .collect::<BTreeMap<_, _>>();
+                let lemma_relationships_str = lemma_relationships
+                    .into_iter()
+                    .map(|(word, relationships)| {
+                        let relationships_str = relationships
+                            .into_iter()
+                            .map(|(relation, word)| format!("- **{relation}**: {word}"))
+                            .collect::<Vec<String>>()
+                            .join("\n  ");
+                        if relationships_str.is_empty() {
+                            format!("- {word}")
+                        } else {
+                            format!("- {word}:\n  {relationships_str}")
+                        }
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+
+                if !lemma_relationships_str.is_empty() {
+                    writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
+                }
             }
-
-            let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> = BTreeMap::new();
-            for r in synset.relationships {
-                relationships.entry(r.relation).or_default().extend(
-                    self.wordnet
-                        .resolve(r.part_of_speech, r.synset_offset)
-                        .unwrap()
-                        .synonyms(),
-                );
-            }
-            let relationships = relationships
-                .into_iter()
-                .map(|(r, w)| (r.to_string(), w))
-                .collect::<BTreeMap<_, _>>();
-            let relationships_str = relationships
-                .into_iter()
-                .map(|(relation, words)| {
-                    format!(
-                        "**{relation}**: {}",
-                        words.into_iter().collect::<Vec<_>>().join(", ")
-                    )
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
-
-            if !relationships_str.is_empty() {
-                writeln!(content, "{relationships_str}").unwrap()
-            }
-
-            let lemma_relationships = synset
-                .lemmas
-                .iter()
-                .filter(|l| l.word != word)
-                .map(|l| {
-                    (
-                        l.word.clone(),
-                        l.relationships
-                            .iter()
-                            .map(|lr| {
-                                (
-                                    lr.relation,
-                                    self.wordnet
-                                        .resolve(lr.part_of_speech, lr.synset_offset)
-                                        .unwrap()
-                                        .synonyms()[lr.target]
-                                        .clone(),
-                                )
-                            })
-                            .filter(|(_, w)| *w != l.word)
-                            .collect::<BTreeMap<LexicalRelation, String>>(),
-                    )
-                })
-                .collect::<BTreeMap<_, _>>();
-            let lemma_relationships_str = lemma_relationships
-                .into_iter()
-                .map(|(word, relationships)| {
-                    let relationships_str = relationships
-                        .into_iter()
-                        .map(|(relation, word)| format!("- **{relation}**: {word}"))
-                        .collect::<Vec<String>>()
-                        .join("\n  ");
-                    if relationships_str.is_empty() {
-                        format!("- {word}")
-                    } else {
-                        format!("- {word}:\n  {relationships_str}")
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join("\n");
-
-            if !lemma_relationships_str.is_empty() {
-                writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
-            }
+            writeln!(content).unwrap();
         }
-        Some(content)
+        Some(content.trim().to_owned())
     }
 }
 
@@ -836,7 +847,7 @@ mod tests {
     fn hover_woman() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let hover = dict.hover("woman");
+        let hover = dict.hover("woman").unwrap();
         let expected = expect![[r#"
             **woman** _noun_
             1. an adult female person (as opposed to a man). e.g. the woman kept house while the man hunted.
@@ -884,8 +895,7 @@ mod tests {
             **synonyms**:
             - fair_sex
             - womanhood:
-              - **derivationally related form**: woman
-        "#]];
+              - **derivationally related form**: woman"#]];
         expected.assert_eq(&info);
     }
 
@@ -893,7 +903,7 @@ mod tests {
     fn hover_run() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let hover = dict.hover("run");
+        let hover = dict.hover("run").unwrap();
         let expected = expect![[r#"
             **run** _noun_
             1. a score in baseball made by a runner touching all four bases safely. e.g. the Yankees scored 3 runs in the bottom of the 9th; their first tally came in the 3rd inning.
@@ -1329,8 +1339,7 @@ mod tests {
             **verb group**: ladder, run
             **synonyms**:
             - unravel:
-              - **derivationally related form**: unraveller
-        "#]];
+              - **derivationally related form**: unraveller"#]];
         expected.assert_eq(&info);
     }
 
@@ -1344,8 +1353,128 @@ mod tests {
             .map(|w| dict.all_info(w).unwrap().len())
             .sum::<usize>();
         let expected = expect![[r#"
-            49494379
+            57947477
         "#]];
         expected.assert_debug_eq(&len);
+    }
+
+    #[test]
+    fn hover_axes() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let hover = dict.hover("axes").unwrap();
+        let expected = expect![[r#"
+            **ax** _noun_
+            1. an edge tool with a heavy bladed head mounted across a handle.
+
+            **Synonyms**: axe
+
+            **ax** _verb_
+            1. chop or split with an ax. e.g. axe wood.
+            2. terminate. e.g. The NSF axed the research program and stopped funding it.
+
+            **Synonyms**: axe
+
+            **axe** _noun_
+            1. an edge tool with a heavy bladed head mounted across a handle.
+
+            **Synonyms**: ax
+
+            **axe** _verb_
+            1. chop or split with an ax. e.g. axe wood.
+            2. terminate. e.g. The NSF axed the research program and stopped funding it.
+
+            **Synonyms**: ax
+
+            **axis** _noun_
+            1. a straight line through a body or figure that satisfies certain conditions.
+            2. the main stem or central part about which plant organs or plant parts such as branches are arranged.
+            3. in World War II the alliance of Germany and Italy in 1936 which later included Japan and other nations. e.g. the Axis opposed the Allies in World War II.
+            4. a group of countries in special alliance.
+            5. the 2nd cervical vertebra; serves as a pivot for turning the head.
+            6. the center around which something rotates.
+
+            **Synonyms**: Axis, axis of rotation, axis vertebra, bloc"#]];
+        expected.assert_eq(&hover);
+    }
+
+    #[test]
+    fn all_info_axes() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let info = dict.all_info("axes").unwrap();
+        let expected = expect![[r#"
+            # ax
+
+            1. _noun_ an edge tool with a heavy bladed head mounted across a handle.
+            **hypernym**: edge_tool
+            **hyponym**: Dayton_ax, Dayton_axe, Western_ax, Western_axe, broadax, broadaxe, common_ax, common_axe, double-bitted_ax, double-bitted_axe, fireman's_ax, fireman's_axe, hatchet, ice_ax, ice_axe, piolet, poleax, poleaxe
+            **part meronym**: ax_handle, ax_head, axe_handle, axe_head, blade, haft, helve
+            **synonyms**:
+            - axe
+
+            2. _verb_ chop or split with an ax. e.g. axe wood.
+            **hypernym**: chop, hack
+            **synonyms**:
+            - axe
+
+            3. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
+            **hypernym**: end, terminate
+            **synonyms**:
+            - axe
+
+            # axe
+
+            1. _noun_ an edge tool with a heavy bladed head mounted across a handle.
+            **hypernym**: edge_tool
+            **hyponym**: Dayton_ax, Dayton_axe, Western_ax, Western_axe, broadax, broadaxe, common_ax, common_axe, double-bitted_ax, double-bitted_axe, fireman's_ax, fireman's_axe, hatchet, ice_ax, ice_axe, piolet, poleax, poleaxe
+            **part meronym**: ax_handle, ax_head, axe_handle, axe_head, blade, haft, helve
+            **synonyms**:
+            - ax
+
+            2. _verb_ chop or split with an ax. e.g. axe wood.
+            **hypernym**: chop, hack
+            **synonyms**:
+            - ax
+
+            3. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
+            **hypernym**: end, terminate
+            **synonyms**:
+            - ax
+
+            # axis
+
+            1. _noun_ a straight line through a body or figure that satisfies certain conditions.
+            **hypernym**: line
+            **hyponym**: coordinate_axis, major_axis, minor_axis, optic_axis, principal_axis, semimajor_axis, semiminor_axis
+
+            2. _noun_ the main stem or central part about which plant organs or plant parts such as branches are arranged.
+            **hypernym**: stalk, stem
+            **hyponym**: rachis, spadix
+            **part meronym**: stele
+
+            3. _noun_ in World War II the alliance of Germany and Italy in 1936 which later included Japan and other nations. e.g. the Axis opposed the Allies in World War II.
+            **hypernym**: alignment, alinement, alliance, coalition
+            **synonyms**:
+            - Axis
+
+            4. _noun_ a group of countries in special alliance.
+            **hypernym**: alignment, alinement, alliance, coalition
+            **hyponym**: scheduled_territories, sterling_area, sterling_bloc
+            **synonyms**:
+            - bloc
+
+            5. _noun_ the 2nd cervical vertebra; serves as a pivot for turning the head.
+            **hypernym**: cervical_vertebra, neck_bone
+            **part meronym**: odontoid_process
+            **synonyms**:
+            - axis_vertebra
+
+            6. _noun_ the center around which something rotates.
+            **hypernym**: mechanism
+            **hyponym**: pin, pivot, rotor_head, rotor_shaft
+            **synonyms**:
+            - axis_of_rotation"#]];
+        expected.assert_eq(&info);
     }
 }
