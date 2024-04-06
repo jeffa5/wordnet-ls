@@ -15,6 +15,7 @@ mod lemmatize;
 mod pos;
 mod relation;
 mod synset;
+mod utils;
 
 pub struct WordNet {
     index: Index,

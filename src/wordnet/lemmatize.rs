@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, fs::File, io::BufRead, path::Path};
 
 use memmap::Mmap;
 
-use super::{index::Index, PartOfSpeech};
+use super::{index::Index, utils, PartOfSpeech};
 
 pub struct Lemmatizer {
     exceptions: BTreeMap<PartOfSpeech, File>,
@@ -32,18 +32,14 @@ impl Lemmatizer {
     }
 
     fn exceptions_for(&self, index: &Index, word: &str, pos: PartOfSpeech) -> Vec<String> {
-        // TODO: use a binary search in the mmap for this
+        let map = self.maps.get(&pos).unwrap();
         let mut results = Vec::new();
-        for line in self.maps.get(&pos).unwrap().lines() {
-            let line = line.unwrap();
-            let mut parts = line.split_whitespace();
-            let first = parts.next().unwrap();
-            if first == word {
-                for base_form in parts {
-                    // not all base forms exist in word net so don't include them
-                    if index.contains(base_form, pos) {
-                        results.push(base_form.to_owned());
-                    }
+        if let Some(line) = utils::binary_search_file(map, word) {
+            let base_forms = line.split_whitespace().skip(1);
+            for base_form in base_forms {
+                // not all base forms exist in word net so don't include them
+                if index.contains(base_form, pos) {
+                    results.push(base_form.to_owned());
                 }
             }
         }
