@@ -66,11 +66,20 @@ impl Lemmatizer {
         if index.contains(word, PartOfSpeech::Noun) {
             results.push(word.to_owned());
         }
+        let mut search_term = word;
+        let mut ful_suffix = false;
+        if let Some(w) = word.strip_suffix("ful") {
+            search_term = w;
+            ful_suffix = true;
+        }
         macro_rules! strip_add_search {
             ($suffix:expr, $ending:expr) => {
-                if let Some(detached) = word.strip_suffix($suffix) {
+                if let Some(detached) = search_term.strip_suffix($suffix) {
                     let mut detached = detached.to_owned();
                     detached.push_str($ending);
+                    if ful_suffix {
+                        detached.push_str("ful");
+                    }
                     if index.contains(&detached, PartOfSpeech::Noun) {
                         results.push(detached);
                     }
@@ -244,6 +253,19 @@ mod tests {
             expect![[r#"
                 [
                     "flamingo",
+                ]
+            "#]],
+        );
+    }
+
+    #[test]
+    fn ful_noun() {
+        check(
+            "boxesful",
+            PartOfSpeech::Noun,
+            expect![[r#"
+                [
+                    "boxful",
                 ]
             "#]],
         );
