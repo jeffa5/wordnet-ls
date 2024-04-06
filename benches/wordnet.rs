@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use lls_lib::wordnet::WordNet;
 use lls_lib::wordnet::SemanticRelation;
+use lls_lib::wordnet::WordNet;
 use std::path::PathBuf;
 
 fn criterion_benchmark(c: &mut Criterion) {
