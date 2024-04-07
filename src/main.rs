@@ -396,12 +396,14 @@ impl Server {
                                 .into_iter()
                                 .filter(|w| self.dict.wordnet.contains(w))
                                 .map(|w| {
+                                    let args = serde_json::to_value(DefineCommandArguments {
+                                        word: w.to_owned(),
+                                    })
+                                    .unwrap();
                                     lsp_types::CodeActionOrCommand::Command(lsp_types::Command {
                                         title: format!("Define {w:?}"),
                                         command: "define".to_owned(),
-                                        arguments: Some(vec![serde_json::Value::String(
-                                            w.to_owned(),
-                                        )]),
+                                        arguments: Some(vec![args]),
                                     })
                                 })
                                 .collect::<Vec<_>>();
@@ -414,51 +416,50 @@ impl Server {
                             c.sender.send(response).unwrap()
                         }
                         lsp_types::request::ExecuteCommand::METHOD => {
-                            let cap =
+                            let mut cap =
                                 serde_json::from_value::<lsp_types::ExecuteCommandParams>(r.params)
                                     .unwrap();
 
                             let response = match cap.command.as_str() {
                                 "define" => {
-                                    let word = cap.arguments.first().unwrap();
-                                    match word {
-                                        serde_json::Value::String(word) => {
-                                            match self.dict.all_info_file(&[word.to_owned()]) {
-                                                Some(filename) => {
-                                                    let params = ShowDocumentParams {
-                                                        uri: Url::from_file_path(filename).unwrap(),
-                                                        external: None,
-                                                        take_focus: None,
-                                                        selection: None,
-                                                    };
-                                                    c.sender
-                                                .send(Message::Request(Request {
-                                                    id: RequestId::from(0),
-                                                    method:
-                                                        lsp_types::request::ShowDocument::METHOD
-                                                            .to_owned(),
-                                                    params: serde_json::to_value(params).unwrap(),
-                                                }))
-                                                .unwrap();
-                                                    Message::Response(Response {
-                                                        id: r.id,
-                                                        result: None,
-                                                        error: None,
-                                                    })
-                                                }
-                                                None => Message::Response(Response {
+                                    let arg = cap.arguments.swap_remove(0);
+                                    match serde_json::from_value::<DefineCommandArguments>(arg) {
+                                        Ok(args) => match self.dict.all_info_file(&[args.word]) {
+                                            Some(filename) => {
+                                                let params = ShowDocumentParams {
+                                                    uri: Url::from_file_path(filename).unwrap(),
+                                                    external: None,
+                                                    take_focus: None,
+                                                    selection: None,
+                                                };
+                                                c.sender
+                                                    .send(Message::Request(Request {
+                                                        id: RequestId::from(0),
+                                                        method:
+                                                            lsp_types::request::ShowDocument::METHOD
+                                                                .to_owned(),
+                                                        params: serde_json::to_value(params)
+                                                            .unwrap(),
+                                                    }))
+                                                    .unwrap();
+                                                Message::Response(Response {
                                                     id: r.id,
                                                     result: None,
                                                     error: None,
-                                                }),
+                                                })
                                             }
-                                        }
+                                            None => Message::Response(Response {
+                                                id: r.id,
+                                                result: None,
+                                                error: None,
+                                            }),
+                                        },
                                         _ => Message::Response(Response {
                                             id: r.id,
                                             result: None,
                                             error: Some(ResponseError {
                                                 code: ErrorCode::InvalidRequest as i32,
-                                                message: String::from("unknown command"),
+                                                message: String::from("invalid arguments"),
                                                 data: None,
                                             }),
                                         }),
@@ -887,6 +888,11 @@ fn resolve_position(content: &str, pos: Position) -> usize {
         .take(pos.line as usize)
         .sum::<usize>();
     pos.line as usize + count + pos.character as usize
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct DefineCommandArguments {
+    word: String,
 }
 
 #[cfg(test)]
