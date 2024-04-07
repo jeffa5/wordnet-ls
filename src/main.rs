@@ -1679,8 +1679,8 @@ mod tests {
                 acc.insert(c, w);
                 acc
             })
-            .into_iter()
-            .map(|(_chars, word)| {
+            .into_values()
+            .map(|word| {
                 let words = get_word_from_content(&word, 0, 0);
                 let found = words.contains(&word);
                 (word, words, found)
