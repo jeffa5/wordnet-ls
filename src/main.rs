@@ -234,9 +234,9 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self.get_word_from_document(&tdp) {
+                            let response = match self.get_word_from_document(&tdp).first() {
                                 Some(w) => {
-                                    if let Some(text) = self.dict.hover(&w) {
+                                    if let Some(text) = self.dict.hover(w) {
                                         let resp = lsp_types::Hover {
                                             contents: lsp_types::HoverContents::Markup(
                                                 lsp_types::MarkupContent {
@@ -275,8 +275,8 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self.get_word_from_document(&tdp) {
-                                Some(w) => match self.dict.all_info_file(&w) {
+                            let response = match self.get_word_from_document(&tdp).first() {
+                                Some(w) => match self.dict.all_info_file(w) {
                                     Some(filename) => {
                                         let resp =
                                             lsp_types::GotoDefinitionResponse::Scalar(Location {
@@ -311,9 +311,9 @@ impl Server {
                             .unwrap();
 
                             tdp.position.character -= 1;
-                            let response = match self.get_word_from_document(&tdp) {
+                            let response = match self.get_word_from_document(&tdp).first() {
                                 Some(word) => {
-                                    let start = match self.dict.all_words.binary_search(&word) {
+                                    let start = match self.dict.all_words.binary_search(word) {
                                         Ok(v) => v,
                                         Err(v) => v,
                                     };
@@ -323,7 +323,7 @@ impl Server {
                                         .all_words
                                         .iter()
                                         .skip(start)
-                                        .filter(|w| w.starts_with(&word))
+                                        .filter(|w| w.starts_with(word))
                                         .take(limit);
                                     let completion_items: Vec<_> = matched_words
                                         .map(|mw| CompletionItem {
@@ -388,13 +388,16 @@ impl Server {
                                 position: cap.range.start,
                             };
 
-                            let response = match self.get_word_from_document(&tdp) {
+                            // TODO: update to offer definitions for all found words
+                            let response = match self.get_word_from_document(&tdp).first() {
                                 Some(w) => {
                                     let resp = lsp_types::CodeActionOrCommand::Command(
                                         lsp_types::Command {
-                                            title: format!("Define {w}"),
+                                            title: format!("Define {w:?}"),
                                             command: "define".to_owned(),
-                                            arguments: Some(vec![serde_json::Value::String(w)]),
+                                            arguments: Some(vec![serde_json::Value::String(
+                                                w.to_owned(),
+                                            )]),
                                         },
                                     );
                                     let resp = vec![resp];
@@ -564,10 +567,7 @@ impl Server {
         }
     }
 
-    fn get_word_from_document(
-        &self,
-        tdp: &lsp_types::TextDocumentPositionParams,
-    ) -> Option<String> {
+    fn get_word_from_document(&self, tdp: &lsp_types::TextDocumentPositionParams) -> Vec<String> {
         let content = self.get_file_content(&tdp.text_document.uri);
         get_word_from_content(
             &content,
@@ -577,15 +577,28 @@ impl Server {
     }
 }
 
-fn get_word_from_content(content: &str, line: usize, character: usize) -> Option<String> {
+fn get_word_from_content(content: &str, line: usize, character: usize) -> Vec<String> {
     let line = match content.lines().nth(line) {
-        None => return None,
+        None => return Vec::new(),
         Some(l) => l,
     };
 
+    let mut words = Vec::new();
+    if let Some(word) = get_word_from_line(line, character) {
+        words.push(word.clone());
+        if let Some(w) = word.strip_prefix('\'') {
+            words.push(w.to_owned());
+        }
+    }
+    words.sort_unstable();
+    words.dedup();
+    words
+}
+
+fn get_word_from_line(line: &str, character: usize) -> Option<String> {
     let mut current_word = String::new();
     let mut found = false;
-    let word_char = |c: char| c.is_alphabetic() || "_'".contains(c);
+    let word_char = |c: char| c.is_alphanumeric() || "_-'./".contains(c);
     for (i, c) in line.chars().enumerate() {
         if word_char(c) {
             for c in c.to_lowercase() {
@@ -1506,12 +1519,12 @@ mod tests {
         let text = "runner";
         let expected = expect![[r#"
             [
-                "0: Some(\"runner\")",
-                "1: Some(\"runner\")",
-                "2: Some(\"runner\")",
-                "3: Some(\"runner\")",
-                "4: Some(\"runner\")",
-                "5: Some(\"runner\")",
+                "0: [\"runner\"]",
+                "1: [\"runner\"]",
+                "2: [\"runner\"]",
+                "3: [\"runner\"]",
+                "4: [\"runner\"]",
+                "5: [\"runner\"]",
             ]
         "#]];
         check_get_word(text, expected)
@@ -1522,19 +1535,19 @@ mod tests {
         let text = "a runner runs";
         let expected = expect![[r#"
             [
-                "0: Some(\"a\")",
-                "1: None",
-                "2: Some(\"runner\")",
-                "3: Some(\"runner\")",
-                "4: Some(\"runner\")",
-                "5: Some(\"runner\")",
-                "6: Some(\"runner\")",
-                "7: Some(\"runner\")",
-                "8: None",
-                "9: Some(\"runs\")",
-                "10: Some(\"runs\")",
-                "11: Some(\"runs\")",
-                "12: Some(\"runs\")",
+                "0: [\"a\"]",
+                "1: []",
+                "2: [\"runner\"]",
+                "3: [\"runner\"]",
+                "4: [\"runner\"]",
+                "5: [\"runner\"]",
+                "6: [\"runner\"]",
+                "7: [\"runner\"]",
+                "8: []",
+                "9: [\"runs\"]",
+                "10: [\"runs\"]",
+                "11: [\"runs\"]",
+                "12: [\"runs\"]",
             ]
         "#]];
         check_get_word(text, expected)
@@ -1545,20 +1558,20 @@ mod tests {
         let text = "new, for sale.";
         let expected = expect![[r#"
             [
-                "0: Some(\"new\")",
-                "1: Some(\"new\")",
-                "2: Some(\"new\")",
-                "3: None",
-                "4: None",
-                "5: Some(\"for\")",
-                "6: Some(\"for\")",
-                "7: Some(\"for\")",
-                "8: None",
-                "9: Some(\"sale\")",
-                "10: Some(\"sale\")",
-                "11: Some(\"sale\")",
-                "12: Some(\"sale\")",
-                "13: None",
+                "0: [\"new\"]",
+                "1: [\"new\"]",
+                "2: [\"new\"]",
+                "3: []",
+                "4: []",
+                "5: [\"for\"]",
+                "6: [\"for\"]",
+                "7: [\"for\"]",
+                "8: []",
+                "9: [\"sale.\"]",
+                "10: [\"sale.\"]",
+                "11: [\"sale.\"]",
+                "12: [\"sale.\"]",
+                "13: [\"sale.\"]",
             ]
         "#]];
         check_get_word(text, expected)
@@ -1569,18 +1582,18 @@ mod tests {
         let text = "living_thing";
         let expected = expect![[r#"
             [
-                "0: Some(\"living_thing\")",
-                "1: Some(\"living_thing\")",
-                "2: Some(\"living_thing\")",
-                "3: Some(\"living_thing\")",
-                "4: Some(\"living_thing\")",
-                "5: Some(\"living_thing\")",
-                "6: Some(\"living_thing\")",
-                "7: Some(\"living_thing\")",
-                "8: Some(\"living_thing\")",
-                "9: Some(\"living_thing\")",
-                "10: Some(\"living_thing\")",
-                "11: Some(\"living_thing\")",
+                "0: [\"living_thing\"]",
+                "1: [\"living_thing\"]",
+                "2: [\"living_thing\"]",
+                "3: [\"living_thing\"]",
+                "4: [\"living_thing\"]",
+                "5: [\"living_thing\"]",
+                "6: [\"living_thing\"]",
+                "7: [\"living_thing\"]",
+                "8: [\"living_thing\"]",
+                "9: [\"living_thing\"]",
+                "10: [\"living_thing\"]",
+                "11: [\"living_thing\"]",
             ]
         "#]];
         check_get_word(text, expected)
@@ -1591,18 +1604,18 @@ mod tests {
         let text = "living thing";
         let expected = expect![[r#"
             [
-                "0: Some(\"living\")",
-                "1: Some(\"living\")",
-                "2: Some(\"living\")",
-                "3: Some(\"living\")",
-                "4: Some(\"living\")",
-                "5: Some(\"living\")",
-                "6: None",
-                "7: Some(\"thing\")",
-                "8: Some(\"thing\")",
-                "9: Some(\"thing\")",
-                "10: Some(\"thing\")",
-                "11: Some(\"thing\")",
+                "0: [\"living\"]",
+                "1: [\"living\"]",
+                "2: [\"living\"]",
+                "3: [\"living\"]",
+                "4: [\"living\"]",
+                "5: [\"living\"]",
+                "6: []",
+                "7: [\"thing\"]",
+                "8: [\"thing\"]",
+                "9: [\"thing\"]",
+                "10: [\"thing\"]",
+                "11: [\"thing\"]",
             ]
         "#]];
         check_get_word(text, expected)
@@ -1613,13 +1626,1540 @@ mod tests {
         let text = "'hood";
         let expected = expect![[r#"
             [
-                "0: Some(\"'hood\")",
-                "1: Some(\"'hood\")",
-                "2: Some(\"'hood\")",
-                "3: Some(\"'hood\")",
-                "4: Some(\"'hood\")",
+                "0: [\"'hood\", \"hood\"]",
+                "1: [\"'hood\", \"hood\"]",
+                "2: [\"'hood\", \"hood\"]",
+                "3: [\"'hood\", \"hood\"]",
+                "4: [\"'hood\", \"hood\"]",
             ]
         "#]];
         check_get_word(text, expected)
+    }
+
+    #[test]
+    fn get_word_all_punctuations() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let wn = WordNet::new(&PathBuf::from(wndir));
+        let words = wn
+            .all_words()
+            .into_iter()
+            .filter_map(|w| {
+                let mut non_alpha_chars =
+                    w.chars().filter(|c| !c.is_alphabetic()).collect::<Vec<_>>();
+                non_alpha_chars.sort();
+                non_alpha_chars.dedup();
+                if non_alpha_chars.is_empty() {
+                    None
+                } else {
+                    Some((non_alpha_chars, w))
+                }
+            })
+            .fold(BTreeMap::new(), |mut acc, (c, w)| {
+                acc.insert(c, w);
+                acc
+            })
+            .into_iter()
+            .map(|(_chars, word)| {
+                let words = get_word_from_content(&word, 0, 0);
+                let found = words.contains(&word);
+                (word, words, found)
+            })
+            .collect::<Vec<_>>();
+        let expected = expect![[r#"
+            [
+                (
+                    "ta'ziyeh",
+                    [
+                        "ta'ziyeh",
+                    ],
+                    true,
+                ),
+                (
+                    "will-o'-the-wisp",
+                    [
+                        "will-o'-the-wisp",
+                    ],
+                    true,
+                ),
+                (
+                    "st.-bruno's-lily",
+                    [
+                        "st.-bruno's-lily",
+                    ],
+                    true,
+                ),
+                (
+                    "wine-maker's_yeast",
+                    [
+                        "wine-maker's_yeast",
+                    ],
+                    true,
+                ),
+                (
+                    "st._peter's_wreath",
+                    [
+                        "st._peter's_wreath",
+                    ],
+                    true,
+                ),
+                (
+                    "brodmann's_area_17",
+                    [
+                        "brodmann's_area_17",
+                    ],
+                    true,
+                ),
+                (
+                    "young's_modulus",
+                    [
+                        "young's_modulus",
+                    ],
+                    true,
+                ),
+                (
+                    "zig-zag",
+                    [
+                        "zig-zag",
+                    ],
+                    true,
+                ),
+                (
+                    ".22-calibre",
+                    [
+                        ".22-calibre",
+                    ],
+                    true,
+                ),
+                (
+                    ".38-calibre",
+                    [
+                        ".38-calibre",
+                    ],
+                    true,
+                ),
+                (
+                    ".45-calibre",
+                    [
+                        ".45-calibre",
+                    ],
+                    true,
+                ),
+                (
+                    "wrangell-st._elias_national_park",
+                    [
+                        "wrangell-st._elias_national_park",
+                    ],
+                    true,
+                ),
+                (
+                    "10-membered",
+                    [
+                        "10-membered",
+                    ],
+                    true,
+                ),
+                (
+                    "401-k",
+                    [
+                        "401-k",
+                    ],
+                    true,
+                ),
+                (
+                    "401-k_plan",
+                    [
+                        "401-k_plan",
+                    ],
+                    true,
+                ),
+                (
+                    "k-dur_20",
+                    [
+                        "k-dur_20",
+                    ],
+                    true,
+                ),
+                (
+                    "v-1",
+                    [
+                        "v-1",
+                    ],
+                    true,
+                ),
+                (
+                    "iodine-125",
+                    [
+                        "iodine-125",
+                    ],
+                    true,
+                ),
+                (
+                    "12-tone_system",
+                    [
+                        "12-tone_system",
+                    ],
+                    true,
+                ),
+                (
+                    "iodine-131",
+                    [
+                        "iodine-131",
+                    ],
+                    true,
+                ),
+                (
+                    "carbon-14_dating",
+                    [
+                        "carbon-14_dating",
+                    ],
+                    true,
+                ),
+                (
+                    "18-karat_gold",
+                    [
+                        "18-karat_gold",
+                    ],
+                    true,
+                ),
+                (
+                    "9-11",
+                    [
+                        "9-11",
+                    ],
+                    true,
+                ),
+                (
+                    "m-1_rifle",
+                    [
+                        "m-1_rifle",
+                    ],
+                    true,
+                ),
+                (
+                    "r-2",
+                    [
+                        "r-2",
+                    ],
+                    true,
+                ),
+                (
+                    "24-karat_gold",
+                    [
+                        "24-karat_gold",
+                    ],
+                    true,
+                ),
+                (
+                    "b-52",
+                    [
+                        "b-52",
+                    ],
+                    true,
+                ),
+                (
+                    "thorium-228",
+                    [
+                        "thorium-228",
+                    ],
+                    true,
+                ),
+                (
+                    "guided_bomb_unit-28",
+                    [
+                        "guided_bomb_unit-28",
+                    ],
+                    true,
+                ),
+                (
+                    "cox-2_inhibitor",
+                    [
+                        "cox-2_inhibitor",
+                    ],
+                    true,
+                ),
+                (
+                    "omega-3",
+                    [
+                        "omega-3",
+                    ],
+                    true,
+                ),
+                (
+                    "5-hydroxy-3-methylglutaryl-coenzyme_a_reductase",
+                    [
+                        "5-hydroxy-3-methylglutaryl-coenzyme_a_reductase",
+                    ],
+                    true,
+                ),
+                (
+                    "omega-3_fatty_acid",
+                    [
+                        "omega-3_fatty_acid",
+                    ],
+                    true,
+                ),
+                (
+                    "4-membered",
+                    [
+                        "4-membered",
+                    ],
+                    true,
+                ),
+                (
+                    "5-membered",
+                    [
+                        "5-membered",
+                    ],
+                    true,
+                ),
+                (
+                    "omega-6",
+                    [
+                        "omega-6",
+                    ],
+                    true,
+                ),
+                (
+                    "omega-6_fatty_acid",
+                    [
+                        "omega-6_fatty_acid",
+                    ],
+                    true,
+                ),
+                (
+                    "7-membered",
+                    [
+                        "7-membered",
+                    ],
+                    true,
+                ),
+                (
+                    "8-membered",
+                    [
+                        "8-membered",
+                    ],
+                    true,
+                ),
+                (
+                    "v-8_juice",
+                    [
+                        "v-8_juice",
+                    ],
+                    true,
+                ),
+                (
+                    "9-membered",
+                    [
+                        "9-membered",
+                    ],
+                    true,
+                ),
+                (
+                    "zollinger-ellison_syndrome",
+                    [
+                        "zollinger-ellison_syndrome",
+                    ],
+                    true,
+                ),
+                (
+                    "w.m.d.",
+                    [
+                        "w.m.d.",
+                    ],
+                    true,
+                ),
+                (
+                    "sept._11",
+                    [
+                        "sept._11",
+                    ],
+                    true,
+                ),
+                (
+                    ".22",
+                    [
+                        ".22",
+                    ],
+                    true,
+                ),
+                (
+                    ".22_calibre",
+                    [
+                        ".22_calibre",
+                    ],
+                    true,
+                ),
+                (
+                    ".38_calibre",
+                    [
+                        ".38_calibre",
+                    ],
+                    true,
+                ),
+                (
+                    ".45_calibre",
+                    [
+                        ".45_calibre",
+                    ],
+                    true,
+                ),
+                (
+                    "winston_s._churchill",
+                    [
+                        "winston_s._churchill",
+                    ],
+                    true,
+                ),
+                (
+                    "tcp/ip",
+                    [
+                        "tcp/ip",
+                    ],
+                    true,
+                ),
+                (
+                    "20/20",
+                    [
+                        "20/20",
+                    ],
+                    true,
+                ),
+                (
+                    "9/11",
+                    [
+                        "9/11",
+                    ],
+                    true,
+                ),
+                (
+                    "24/7",
+                    [
+                        "24/7",
+                    ],
+                    true,
+                ),
+                (
+                    "transmission_control_protocol/internet_protocol",
+                    [
+                        "transmission_control_protocol/internet_protocol",
+                    ],
+                    true,
+                ),
+                (
+                    "0",
+                    [
+                        "0",
+                    ],
+                    true,
+                ),
+                (
+                    "110th",
+                    [
+                        "110th",
+                    ],
+                    true,
+                ),
+                (
+                    "120th",
+                    [
+                        "120th",
+                    ],
+                    true,
+                ),
+                (
+                    "1820s",
+                    [
+                        "1820s",
+                    ],
+                    true,
+                ),
+                (
+                    "1920s",
+                    [
+                        "1920s",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_102",
+                    [
+                        "atomic_number_102",
+                    ],
+                    true,
+                ),
+                (
+                    "130th",
+                    [
+                        "130th",
+                    ],
+                    true,
+                ),
+                (
+                    "1530s",
+                    [
+                        "1530s",
+                    ],
+                    true,
+                ),
+                (
+                    "1830s",
+                    [
+                        "1830s",
+                    ],
+                    true,
+                ),
+                (
+                    "1930s",
+                    [
+                        "1930s",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_103",
+                    [
+                        "atomic_number_103",
+                    ],
+                    true,
+                ),
+                (
+                    "140th",
+                    [
+                        "140th",
+                    ],
+                    true,
+                ),
+                (
+                    "1840s",
+                    [
+                        "1840s",
+                    ],
+                    true,
+                ),
+                (
+                    "1940s",
+                    [
+                        "1940s",
+                    ],
+                    true,
+                ),
+                (
+                    "element_104",
+                    [
+                        "element_104",
+                    ],
+                    true,
+                ),
+                (
+                    "150th",
+                    [
+                        "150th",
+                    ],
+                    true,
+                ),
+                (
+                    "1750s",
+                    [
+                        "1750s",
+                    ],
+                    true,
+                ),
+                (
+                    "1850s",
+                    [
+                        "1850s",
+                    ],
+                    true,
+                ),
+                (
+                    "1950s",
+                    [
+                        "1950s",
+                    ],
+                    true,
+                ),
+                (
+                    "element_105",
+                    [
+                        "element_105",
+                    ],
+                    true,
+                ),
+                (
+                    "160th",
+                    [
+                        "160th",
+                    ],
+                    true,
+                ),
+                (
+                    "1760s",
+                    [
+                        "1760s",
+                    ],
+                    true,
+                ),
+                (
+                    "1860s",
+                    [
+                        "1860s",
+                    ],
+                    true,
+                ),
+                (
+                    "1960s",
+                    [
+                        "1960s",
+                    ],
+                    true,
+                ),
+                (
+                    "element_106",
+                    [
+                        "element_106",
+                    ],
+                    true,
+                ),
+                (
+                    "1770s",
+                    [
+                        "1770s",
+                    ],
+                    true,
+                ),
+                (
+                    "1870s",
+                    [
+                        "1870s",
+                    ],
+                    true,
+                ),
+                (
+                    "1970s",
+                    [
+                        "1970s",
+                    ],
+                    true,
+                ),
+                (
+                    "element_107",
+                    [
+                        "element_107",
+                    ],
+                    true,
+                ),
+                (
+                    "1880s",
+                    [
+                        "1880s",
+                    ],
+                    true,
+                ),
+                (
+                    "1980s",
+                    [
+                        "1980s",
+                    ],
+                    true,
+                ),
+                (
+                    "element_108",
+                    [
+                        "element_108",
+                    ],
+                    true,
+                ),
+                (
+                    "1990s",
+                    [
+                        "1990s",
+                    ],
+                    true,
+                ),
+                (
+                    "element_109",
+                    [
+                        "element_109",
+                    ],
+                    true,
+                ),
+                (
+                    "element_110",
+                    [
+                        "element_110",
+                    ],
+                    true,
+                ),
+                (
+                    "20th",
+                    [
+                        "20th",
+                    ],
+                    true,
+                ),
+                (
+                    "january_20",
+                    [
+                        "january_20",
+                    ],
+                    true,
+                ),
+                (
+                    "30th",
+                    [
+                        "30th",
+                    ],
+                    true,
+                ),
+                (
+                    "u308",
+                    [
+                        "u308",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_30",
+                    [
+                        "atomic_number_30",
+                    ],
+                    true,
+                ),
+                (
+                    "40th",
+                    [
+                        "40th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_40",
+                    [
+                        "atomic_number_40",
+                    ],
+                    true,
+                ),
+                (
+                    "50th",
+                    [
+                        "50th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_50",
+                    [
+                        "atomic_number_50",
+                    ],
+                    true,
+                ),
+                (
+                    "60th",
+                    [
+                        "60th",
+                    ],
+                    true,
+                ),
+                (
+                    "cobalt_60",
+                    [
+                        "cobalt_60",
+                    ],
+                    true,
+                ),
+                (
+                    "70th",
+                    [
+                        "70th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_70",
+                    [
+                        "atomic_number_70",
+                    ],
+                    true,
+                ),
+                (
+                    "80th",
+                    [
+                        "80th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_80",
+                    [
+                        "atomic_number_80",
+                    ],
+                    true,
+                ),
+                (
+                    "90th",
+                    [
+                        "90th",
+                    ],
+                    true,
+                ),
+                (
+                    "strontium_90",
+                    [
+                        "strontium_90",
+                    ],
+                    true,
+                ),
+                (
+                    "ut1",
+                    [
+                        "ut1",
+                    ],
+                    true,
+                ),
+                (
+                    "21st",
+                    [
+                        "21st",
+                    ],
+                    true,
+                ),
+                (
+                    "125th",
+                    [
+                        "125th",
+                    ],
+                    true,
+                ),
+                (
+                    "1728",
+                    [
+                        "1728",
+                    ],
+                    true,
+                ),
+                (
+                    "war_of_1812",
+                    [
+                        "war_of_1812",
+                    ],
+                    true,
+                ),
+                (
+                    "vitamin_b12",
+                    [
+                        "vitamin_b12",
+                    ],
+                    true,
+                ),
+                (
+                    "31st",
+                    [
+                        "31st",
+                    ],
+                    true,
+                ),
+                (
+                    "135th",
+                    [
+                        "135th",
+                    ],
+                    true,
+                ),
+                (
+                    "cesium_137",
+                    [
+                        "cesium_137",
+                    ],
+                    true,
+                ),
+                (
+                    "element_113",
+                    [
+                        "element_113",
+                    ],
+                    true,
+                ),
+                (
+                    "41st",
+                    [
+                        "41st",
+                    ],
+                    true,
+                ),
+                (
+                    "145th",
+                    [
+                        "145th",
+                    ],
+                    true,
+                ),
+                (
+                    "8_may_1945",
+                    [
+                        "8_may_1945",
+                    ],
+                    true,
+                ),
+                (
+                    "15_august_1945",
+                    [
+                        "15_august_1945",
+                    ],
+                    true,
+                ),
+                (
+                    "6_june_1944",
+                    [
+                        "6_june_1944",
+                    ],
+                    true,
+                ),
+                (
+                    "june_14",
+                    [
+                        "june_14",
+                    ],
+                    true,
+                ),
+                (
+                    "51",
+                    [
+                        "51",
+                    ],
+                    true,
+                ),
+                (
+                    "165th",
+                    [
+                        "165th",
+                    ],
+                    true,
+                ),
+                (
+                    "175th",
+                    [
+                        "175th",
+                    ],
+                    true,
+                ),
+                (
+                    "element_115",
+                    [
+                        "element_115",
+                    ],
+                    true,
+                ),
+                (
+                    "61",
+                    [
+                        "61",
+                    ],
+                    true,
+                ),
+                (
+                    "element_116",
+                    [
+                        "element_116",
+                    ],
+                    true,
+                ),
+                (
+                    "71",
+                    [
+                        "71",
+                    ],
+                    true,
+                ),
+                (
+                    "september_17",
+                    [
+                        "september_17",
+                    ],
+                    true,
+                ),
+                (
+                    "81",
+                    [
+                        "81",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_81",
+                    [
+                        "atomic_number_81",
+                    ],
+                    true,
+                ),
+                (
+                    "91",
+                    [
+                        "91",
+                    ],
+                    true,
+                ),
+                (
+                    "march_19",
+                    [
+                        "march_19",
+                    ],
+                    true,
+                ),
+                (
+                    "world_war_1",
+                    [
+                        "world_war_1",
+                    ],
+                    true,
+                ),
+                (
+                    "y2k",
+                    [
+                        "y2k",
+                    ],
+                    true,
+                ),
+                (
+                    "32nd",
+                    [
+                        "32nd",
+                    ],
+                    true,
+                ),
+                (
+                    "uranium_235",
+                    [
+                        "uranium_235",
+                    ],
+                    true,
+                ),
+                (
+                    "uranium_238",
+                    [
+                        "uranium_238",
+                    ],
+                    true,
+                ),
+                (
+                    "plutonium_239",
+                    [
+                        "plutonium_239",
+                    ],
+                    true,
+                ),
+                (
+                    "june_23",
+                    [
+                        "june_23",
+                    ],
+                    true,
+                ),
+                (
+                    "42nd",
+                    [
+                        "42nd",
+                    ],
+                    true,
+                ),
+                (
+                    "october_24",
+                    [
+                        "october_24",
+                    ],
+                    true,
+                ),
+                (
+                    "52",
+                    [
+                        "52",
+                    ],
+                    true,
+                ),
+                (
+                    "ponte_25_de_abril",
+                    [
+                        "ponte_25_de_abril",
+                    ],
+                    true,
+                ),
+                (
+                    "c2h6",
+                    [
+                        "c2h6",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_62",
+                    [
+                        "atomic_number_62",
+                    ],
+                    true,
+                ),
+                (
+                    "72",
+                    [
+                        "72",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_72",
+                    [
+                        "atomic_number_72",
+                    ],
+                    true,
+                ),
+                (
+                    "82",
+                    [
+                        "82",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_82",
+                    [
+                        "atomic_number_82",
+                    ],
+                    true,
+                ),
+                (
+                    "92",
+                    [
+                        "92",
+                    ],
+                    true,
+                ),
+                (
+                    "september_29",
+                    [
+                        "september_29",
+                    ],
+                    true,
+                ),
+                (
+                    "y2k_compliant",
+                    [
+                        "y2k_compliant",
+                    ],
+                    true,
+                ),
+                (
+                    "m3",
+                    [
+                        "m3",
+                    ],
+                    true,
+                ),
+                (
+                    "43rd",
+                    [
+                        "43rd",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_43",
+                    [
+                        "atomic_number_43",
+                    ],
+                    true,
+                ),
+                (
+                    "53",
+                    [
+                        "53",
+                    ],
+                    true,
+                ),
+                (
+                    "365_days",
+                    [
+                        "365_days",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_53",
+                    [
+                        "atomic_number_53",
+                    ],
+                    true,
+                ),
+                (
+                    "63",
+                    [
+                        "63",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_63",
+                    [
+                        "atomic_number_63",
+                    ],
+                    true,
+                ),
+                (
+                    "73",
+                    [
+                        "73",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_73",
+                    [
+                        "atomic_number_73",
+                    ],
+                    true,
+                ),
+                (
+                    "83",
+                    [
+                        "83",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_83",
+                    [
+                        "atomic_number_83",
+                    ],
+                    true,
+                ),
+                (
+                    "93",
+                    [
+                        "93",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_93",
+                    [
+                        "atomic_number_93",
+                    ],
+                    true,
+                ),
+                (
+                    "vitamin_k3",
+                    [
+                        "vitamin_k3",
+                    ],
+                    true,
+                ),
+                (
+                    "cd4",
+                    [
+                        "cd4",
+                    ],
+                    true,
+                ),
+                (
+                    "54",
+                    [
+                        "54",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_54",
+                    [
+                        "atomic_number_54",
+                    ],
+                    true,
+                ),
+                (
+                    "64th",
+                    [
+                        "64th",
+                    ],
+                    true,
+                ),
+                (
+                    "ru_486",
+                    [
+                        "ru_486",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_64",
+                    [
+                        "atomic_number_64",
+                    ],
+                    true,
+                ),
+                (
+                    "74",
+                    [
+                        "74",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_74",
+                    [
+                        "atomic_number_74",
+                    ],
+                    true,
+                ),
+                (
+                    "84",
+                    [
+                        "84",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_84",
+                    [
+                        "atomic_number_84",
+                    ],
+                    true,
+                ),
+                (
+                    "94",
+                    [
+                        "94",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_94",
+                    [
+                        "atomic_number_94",
+                    ],
+                    true,
+                ),
+                (
+                    "july_4",
+                    [
+                        "july_4",
+                    ],
+                    true,
+                ),
+                (
+                    "5th",
+                    [
+                        "5th",
+                    ],
+                    true,
+                ),
+                (
+                    "65th",
+                    [
+                        "65th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_65",
+                    [
+                        "atomic_number_65",
+                    ],
+                    true,
+                ),
+                (
+                    "75th",
+                    [
+                        "75th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_75",
+                    [
+                        "atomic_number_75",
+                    ],
+                    true,
+                ),
+                (
+                    "85th",
+                    [
+                        "85th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_85",
+                    [
+                        "atomic_number_85",
+                    ],
+                    true,
+                ),
+                (
+                    "95th",
+                    [
+                        "95th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_95",
+                    [
+                        "atomic_number_95",
+                    ],
+                    true,
+                ),
+                (
+                    "november_5",
+                    [
+                        "november_5",
+                    ],
+                    true,
+                ),
+                (
+                    "6th",
+                    [
+                        "6th",
+                    ],
+                    true,
+                ),
+                (
+                    "76",
+                    [
+                        "76",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_76",
+                    [
+                        "atomic_number_76",
+                    ],
+                    true,
+                ),
+                (
+                    "86",
+                    [
+                        "86",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_86",
+                    [
+                        "atomic_number_86",
+                    ],
+                    true,
+                ),
+                (
+                    "96",
+                    [
+                        "96",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_96",
+                    [
+                        "atomic_number_96",
+                    ],
+                    true,
+                ),
+                (
+                    "vitamin_b6",
+                    [
+                        "vitamin_b6",
+                    ],
+                    true,
+                ),
+                (
+                    "7th",
+                    [
+                        "7th",
+                    ],
+                    true,
+                ),
+                (
+                    "87",
+                    [
+                        "87",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_87",
+                    [
+                        "atomic_number_87",
+                    ],
+                    true,
+                ),
+                (
+                    "97",
+                    [
+                        "97",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_97",
+                    [
+                        "atomic_number_97",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_77",
+                    [
+                        "atomic_number_77",
+                    ],
+                    true,
+                ),
+                (
+                    "cd8",
+                    [
+                        "cd8",
+                    ],
+                    true,
+                ),
+                (
+                    "98",
+                    [
+                        "98",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_98",
+                    [
+                        "atomic_number_98",
+                    ],
+                    true,
+                ),
+                (
+                    "december_8",
+                    [
+                        "december_8",
+                    ],
+                    true,
+                ),
+                (
+                    "9th",
+                    [
+                        "9th",
+                    ],
+                    true,
+                ),
+                (
+                    "atomic_number_99",
+                    [
+                        "atomic_number_99",
+                    ],
+                    true,
+                ),
+                (
+                    "zygophyllum_fabago",
+                    [
+                        "zygophyllum_fabago",
+                    ],
+                    true,
+                ),
+            ]
+        "#]];
+        expected.assert_debug_eq(&words);
     }
 }
