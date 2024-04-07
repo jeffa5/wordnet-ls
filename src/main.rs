@@ -280,30 +280,20 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self
-                                .get_word_from_document(&tdp)
-                                .into_iter()
-                                .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
-                            {
-                                Some(w) => match self.dict.all_info_file(&w) {
-                                    Some(filename) => {
-                                        let resp =
-                                            lsp_types::GotoDefinitionResponse::Scalar(Location {
-                                                uri: Url::from_file_path(filename).unwrap(),
-                                                range: Range::default(),
-                                            });
-                                        Message::Response(Response {
-                                            id: r.id,
-                                            result: serde_json::to_value(resp).ok(),
-                                            error: None,
-                                        })
-                                    }
-                                    None => Message::Response(Response {
+                            let words = self.get_word_from_document(&tdp);
+                            let response = match self.dict.all_info_file(&words) {
+                                Some(filename) => {
+                                    let resp =
+                                        lsp_types::GotoDefinitionResponse::Scalar(Location {
+                                            uri: Url::from_file_path(filename).unwrap(),
+                                            range: Range::default(),
+                                        });
+                                    Message::Response(Response {
                                         id: r.id,
-                                        result: None,
+                                        result: serde_json::to_value(resp).ok(),
                                         error: None,
-                                    }),
-                                },
+                                    })
+                                }
                                 None => Message::Response(Response {
                                     id: r.id,
                                     result: None,
@@ -433,7 +423,7 @@ impl Server {
                                     let word = cap.arguments.first().unwrap();
                                     match word {
                                         serde_json::Value::String(word) => {
-                                            match self.dict.all_info_file(word) {
+                                            match self.dict.all_info_file(&[word.to_owned()]) {
                                                 Some(filename) => {
                                                     let params = ShowDocumentParams {
                                                         uri: Url::from_file_path(filename).unwrap(),
@@ -769,112 +759,118 @@ impl Dict {
         blocks.join("\n\n")
     }
 
-    fn all_info_file(&self, word: &str) -> Option<PathBuf> {
-        let info = self.all_info(word)?;
-        let filename = PathBuf::from(format!("/tmp/lls-{word}.md"));
+    fn all_info_file(&self, words: &[String]) -> Option<PathBuf> {
+        let info = self.all_info(words)?;
+        let filename = PathBuf::from(format!("/tmp/lls-{}.md", words[0]));
         let mut file = File::create(&filename).unwrap();
         file.write_all(info.as_bytes()).unwrap();
         Some(filename)
     }
 
-    fn all_info(&self, word: &str) -> Option<String> {
-        let lemmas = self.wordnet.lemmatize(word);
-        if lemmas.all(|t| t.is_empty()) {
+    fn all_info(&self, words: &[String]) -> Option<String> {
+        let lemmas = words
+            .iter()
+            .map(|w| self.wordnet.lemmatize(w))
+            .filter(|pos| pos.any(|lemmas| !lemmas.is_empty()))
+            .collect::<Vec<_>>();
+        if lemmas.is_empty() {
             return None;
         }
         let mut content = String::new();
-        lemmas.for_each(|pos, lemmas| {
-            lemmas.into_iter().for_each(|lemma| {
-                let synsets = self.wordnet.synsets_for(&lemma, pos);
-                writeln!(content, "# {lemma}").unwrap();
-                for (i, synset) in synsets.into_iter().enumerate() {
-                    let definition = synset.definition;
-                    let pos = synset.part_of_speech.to_string();
+        lemmas.into_iter().for_each(|pos| {
+            pos.for_each(|pos, lemmas| {
+                lemmas.into_iter().for_each(|lemma| {
+                    let synsets = self.wordnet.synsets_for(&lemma, pos);
+                    writeln!(content, "# {lemma}").unwrap();
+                    for (i, synset) in synsets.into_iter().enumerate() {
+                        let definition = synset.definition;
+                        let pos = synset.part_of_speech.to_string();
 
-                    let i = i + 1;
-                    write!(content, "\n{i}. _{pos}_ {definition}.").unwrap();
-                    let examples = synset.examples.join("; ");
-                    if !examples.is_empty() {
-                        writeln!(content, " e.g. {examples}.").unwrap();
-                    } else {
-                        writeln!(content).unwrap();
+                        let i = i + 1;
+                        write!(content, "\n{i}. _{pos}_ {definition}.").unwrap();
+                        let examples = synset.examples.join("; ");
+                        if !examples.is_empty() {
+                            writeln!(content, " e.g. {examples}.").unwrap();
+                        } else {
+                            writeln!(content).unwrap();
+                        }
+
+                        let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> =
+                            BTreeMap::new();
+                        for r in synset.relationships {
+                            relationships.entry(r.relation).or_default().extend(
+                                self.wordnet
+                                    .resolve(r.part_of_speech, r.synset_offset)
+                                    .unwrap()
+                                    .synonyms(),
+                            );
+                        }
+                        let relationships = relationships
+                            .into_iter()
+                            .map(|(r, w)| (r.to_string(), w))
+                            .collect::<BTreeMap<_, _>>();
+                        let relationships_str = relationships
+                            .into_iter()
+                            .map(|(relation, words)| {
+                                format!(
+                                    "**{relation}**: {}",
+                                    words.into_iter().collect::<Vec<_>>().join(", ")
+                                )
+                            })
+                            .collect::<Vec<_>>()
+                            .join("\n");
+
+                        if !relationships_str.is_empty() {
+                            writeln!(content, "{relationships_str}").unwrap()
+                        }
+
+                        let lemma_relationships = synset
+                            .lemmas
+                            .iter()
+                            .filter(|l| l.word != lemma)
+                            .map(|l| {
+                                (
+                                    l.word.clone(),
+                                    l.relationships
+                                        .iter()
+                                        .map(|lr| {
+                                            (
+                                                lr.relation,
+                                                self.wordnet
+                                                    .resolve(lr.part_of_speech, lr.synset_offset)
+                                                    .unwrap()
+                                                    .synonyms()[lr.target]
+                                                    .clone(),
+                                            )
+                                        })
+                                        .filter(|(_, w)| *w != l.word)
+                                        .collect::<BTreeMap<LexicalRelation, String>>(),
+                                )
+                            })
+                            .collect::<BTreeMap<_, _>>();
+                        let lemma_relationships_str = lemma_relationships
+                            .into_iter()
+                            .map(|(word, relationships)| {
+                                let relationships_str = relationships
+                                    .into_iter()
+                                    .map(|(relation, word)| format!("- **{relation}**: {word}"))
+                                    .collect::<Vec<String>>()
+                                    .join("\n  ");
+                                if relationships_str.is_empty() {
+                                    format!("- {word}")
+                                } else {
+                                    format!("- {word}:\n  {relationships_str}")
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join("\n");
+
+                        if !lemma_relationships_str.is_empty() {
+                            writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
+                        }
                     }
-
-                    let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> =
-                        BTreeMap::new();
-                    for r in synset.relationships {
-                        relationships.entry(r.relation).or_default().extend(
-                            self.wordnet
-                                .resolve(r.part_of_speech, r.synset_offset)
-                                .unwrap()
-                                .synonyms(),
-                        );
-                    }
-                    let relationships = relationships
-                        .into_iter()
-                        .map(|(r, w)| (r.to_string(), w))
-                        .collect::<BTreeMap<_, _>>();
-                    let relationships_str = relationships
-                        .into_iter()
-                        .map(|(relation, words)| {
-                            format!(
-                                "**{relation}**: {}",
-                                words.into_iter().collect::<Vec<_>>().join(", ")
-                            )
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n");
-
-                    if !relationships_str.is_empty() {
-                        writeln!(content, "{relationships_str}").unwrap()
-                    }
-
-                    let lemma_relationships = synset
-                        .lemmas
-                        .iter()
-                        .filter(|l| l.word != lemma)
-                        .map(|l| {
-                            (
-                                l.word.clone(),
-                                l.relationships
-                                    .iter()
-                                    .map(|lr| {
-                                        (
-                                            lr.relation,
-                                            self.wordnet
-                                                .resolve(lr.part_of_speech, lr.synset_offset)
-                                                .unwrap()
-                                                .synonyms()[lr.target]
-                                                .clone(),
-                                        )
-                                    })
-                                    .filter(|(_, w)| *w != l.word)
-                                    .collect::<BTreeMap<LexicalRelation, String>>(),
-                            )
-                        })
-                        .collect::<BTreeMap<_, _>>();
-                    let lemma_relationships_str = lemma_relationships
-                        .into_iter()
-                        .map(|(word, relationships)| {
-                            let relationships_str = relationships
-                                .into_iter()
-                                .map(|(relation, word)| format!("- **{relation}**: {word}"))
-                                .collect::<Vec<String>>()
-                                .join("\n  ");
-                            if relationships_str.is_empty() {
-                                format!("- {word}")
-                            } else {
-                                format!("- {word}:\n  {relationships_str}")
-                            }
-                        })
-                        .collect::<Vec<String>>()
-                        .join("\n");
-
-                    if !lemma_relationships_str.is_empty() {
-                        writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
-                    }
-                }
-                writeln!(content).unwrap();
+                    writeln!(content).unwrap();
+                })
             })
         });
         Some(content.trim().to_owned())
@@ -919,7 +915,7 @@ mod tests {
     fn all_info_woman() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let info = dict.all_info("woman").unwrap();
+        let info = dict.all_info(&["woman".to_owned()]).unwrap();
         let expected = expect![[r#"
             # woman
 
@@ -1032,7 +1028,7 @@ mod tests {
     fn all_info_run() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let info = dict.all_info("run").unwrap();
+        let info = dict.all_info(&["run".to_owned()]).unwrap();
         let expected = expect![[r#"
             # run
 
@@ -1406,7 +1402,7 @@ mod tests {
         let len = dict
             .all_words
             .iter()
-            .map(|w| dict.all_info(w).unwrap().len())
+            .map(|w| dict.all_info(&[w.clone()]).unwrap().len())
             .sum::<usize>();
         let expected = expect![[r#"
             54641063
@@ -1492,7 +1488,7 @@ mod tests {
     fn all_info_axes() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let info = dict.all_info("axes").unwrap();
+        let info = dict.all_info(&["axes".to_owned()]).unwrap();
         let expected = expect![[r#"
             # ax
 
