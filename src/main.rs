@@ -746,7 +746,7 @@ impl Dict {
                     .map(|x| x.replace('_', " "))
                     .collect::<Vec<String>>()
                     .join(", ");
-                blocks.push(format!("**Synonyms**: {syns}"));
+                blocks.push(format!("**synonyms**: {syns}"));
             }
 
             let mut antonyms = ss_pos
@@ -762,7 +762,7 @@ impl Dict {
                     .map(|x| x.replace('_', " "))
                     .collect::<Vec<String>>()
                     .join(", ");
-                blocks.push(format!("**Antonyms**: {ants}"));
+                blocks.push(format!("**antonyms**: {ants}"));
             }
         }
 
@@ -909,9 +909,9 @@ mod tests {
             3. a human female employed to do housework. e.g. the char will clean the carpet; I have a woman who comes in four hours a day while I write.
             4. women as a class. e.g. it's an insult to American womanhood; woman is the glory of creation; the fair sex gathered on the veranda.
 
-            **Synonyms**: adult female, char, charwoman, cleaning lady, cleaning woman, fair sex, womanhood
+            **synonyms**: adult female, char, charwoman, cleaning lady, cleaning woman, fair sex, womanhood
 
-            **Antonyms**: man"#]];
+            **antonyms**: man"#]];
         expected.assert_eq(&hover);
     }
 
@@ -977,7 +977,7 @@ mod tests {
             15. an unbroken chronological sequence. e.g. the play had a long run on Broadway; the team enjoyed a brief run of victories.
             16. a short trip. e.g. take a run into town.
 
-            **Synonyms**: campaign, discharge, foot race, footrace, ladder, outpouring, political campaign, ravel, rill, rivulet, runnel, running, running game, running play, streak, streamlet, tally, test, trial
+            **synonyms**: campaign, discharge, foot race, footrace, ladder, outpouring, political campaign, ravel, rill, rivulet, runnel, running, running game, running play, streak, streamlet, tally, test, trial
 
             **run** _verb_
             1. move fast by using one's feet, with one foot off the ground at any given time. e.g. Don't run--you'll be out of breath; The children ran to the store.
@@ -1022,9 +1022,9 @@ mod tests {
             40. come unraveled or undone as if by snagging. e.g. Her nylons were running.
             41. become undone. e.g. the sweater unraveled.
 
-            **Synonyms**: be given, black market, bleed, break away, bunk, campaign, carry, consort, course, die hard, draw, endure, escape, execute, extend, feed, flow, fly the coop, function, go, guide, head for the hills, hightail it, hunt, hunt down, incline, ladder, lam, lead, lean, melt, melt down, move, operate, pass, persist, play, ply, prevail, race, range, run away, run for, scarper, scat, take to the woods, tend, track down, turn tail, unravel, work
+            **synonyms**: be given, black market, bleed, break away, bunk, campaign, carry, consort, course, die hard, draw, endure, escape, execute, extend, feed, flow, fly the coop, function, go, guide, head for the hills, hightail it, hunt, hunt down, incline, ladder, lam, lead, lean, melt, melt down, move, operate, pass, persist, play, ply, prevail, race, range, run away, run for, scarper, scat, take to the woods, tend, track down, turn tail, unravel, work
 
-            **Antonyms**: idle, malfunction"#]];
+            **antonyms**: idle, malfunction"#]];
         expected.assert_eq(&hover);
     }
 
@@ -1423,12 +1423,12 @@ mod tests {
             **ax** _noun_
             1. an edge tool with a heavy bladed head mounted across a handle.
 
-            **Synonyms**: axe
+            **synonyms**: axe
 
             **axe** _noun_
             1. an edge tool with a heavy bladed head mounted across a handle.
 
-            **Synonyms**: ax
+            **synonyms**: ax
 
             **axis** _noun_
             1. a straight line through a body or figure that satisfies certain conditions.
@@ -1438,19 +1438,19 @@ mod tests {
             5. the 2nd cervical vertebra; serves as a pivot for turning the head.
             6. the center around which something rotates.
 
-            **Synonyms**: Axis, axis of rotation, axis vertebra, bloc
+            **synonyms**: Axis, axis of rotation, axis vertebra, bloc
 
             **ax** _verb_
             1. chop or split with an ax. e.g. axe wood.
             2. terminate. e.g. The NSF axed the research program and stopped funding it.
 
-            **Synonyms**: axe
+            **synonyms**: axe
 
             **axe** _verb_
             1. chop or split with an ax. e.g. axe wood.
             2. terminate. e.g. The NSF axed the research program and stopped funding it.
 
-            **Synonyms**: ax"#]];
+            **synonyms**: ax"#]];
         expected.assert_eq(&hover);
     }
 
@@ -1465,7 +1465,7 @@ mod tests {
             2. the smallest whole number or a numeral representing this number. e.g. he has the one but will need a two and three to go with it; they had lunch at one.
             3. the 9th letter of the Roman alphabet.
 
-            **Synonyms**: 1, I, ace, atomic number 53, iodin, iodine, one, single, unity
+            **synonyms**: 1, I, ace, atomic number 53, iodin, iodine, one, single, unity
 
             **be** _verb_
             1. have the quality of being; (copula, used with an adjective or a predicate noun). e.g. John is rich; This is not a good answer.
@@ -1482,9 +1482,9 @@ mod tests {
             12. to remain unmolested, undisturbed, or uninterrupted -- used only in infinitive form. e.g. let her be.
             13. be priced at. e.g. These shoes cost $100.
 
-            **Synonyms**: comprise, constitute, cost, embody, equal, exist, follow, live, make up, personify, represent
+            **synonyms**: comprise, constitute, cost, embody, equal, exist, follow, live, make up, personify, represent
 
-            **Antonyms**: differ"#]];
+            **antonyms**: differ"#]];
         expected.assert_eq(&hover);
     }
 
