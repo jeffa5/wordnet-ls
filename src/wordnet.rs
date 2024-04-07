@@ -8,6 +8,7 @@ use std::path::Path;
 pub use synset::SynSet;
 
 use self::lemmatize::Lemmatizer;
+use self::pos::PartsOfSpeech;
 
 mod data;
 mod index;
@@ -50,14 +51,13 @@ impl WordNet {
         result
     }
 
-    pub fn lemmatize(&self, word: &str) -> Vec<String> {
-        let mut lemmas = PartOfSpeech::variants()
-            .into_iter()
-            .flat_map(|pos| self.lemmatizer.lemmatize(word, pos, &self.index))
-            .collect::<Vec<_>>();
-        lemmas.sort_unstable();
-        lemmas.dedup();
-        lemmas
+    pub fn lemmatize(&self, word: &str) -> PartsOfSpeech<Vec<String>> {
+        PartsOfSpeech::with(|pos| {
+            let mut lemmas = self.lemmatizer.lemmatize(word, pos, &self.index);
+            lemmas.sort_unstable();
+            lemmas.dedup();
+            lemmas
+        })
     }
 
     pub fn lemmatize_for(&self, word: &str, pos: PartOfSpeech) -> Vec<String> {

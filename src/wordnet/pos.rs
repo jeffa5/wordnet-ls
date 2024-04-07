@@ -66,3 +66,45 @@ impl PartOfSpeech {
         .into_iter()
     }
 }
+
+pub struct PartsOfSpeech<T> {
+    pub noun: T,
+    pub verb: T,
+    pub adjective: T,
+    pub adverb: T,
+}
+
+impl<T> PartsOfSpeech<T> {
+    pub fn with(mut f: impl FnMut(PartOfSpeech) -> T) -> Self {
+        Self {
+            noun: f(PartOfSpeech::Noun),
+            verb: f(PartOfSpeech::Verb),
+            adjective: f(PartOfSpeech::Adjective),
+            adverb: f(PartOfSpeech::Adverb),
+        }
+    }
+
+    pub fn any(&self, mut f: impl FnMut(&T) -> bool) -> bool {
+        f(&self.noun) || f(&self.verb) || f(&self.adjective) || f(&self.adverb)
+    }
+
+    pub fn all(&self, mut f: impl FnMut(&T) -> bool) -> bool {
+        f(&self.noun) && f(&self.verb) && f(&self.adjective) && f(&self.adverb)
+    }
+
+    pub fn map<U>(self, mut f: impl FnMut(PartOfSpeech, T) -> U) -> PartsOfSpeech<U> {
+        PartsOfSpeech {
+            noun: f(PartOfSpeech::Noun, self.noun),
+            verb: f(PartOfSpeech::Verb, self.verb),
+            adjective: f(PartOfSpeech::Adjective, self.adjective),
+            adverb: f(PartOfSpeech::Adverb, self.adverb),
+        }
+    }
+
+    pub fn for_each(self, mut f: impl FnMut(PartOfSpeech, T)) {
+        f(PartOfSpeech::Noun, self.noun);
+        f(PartOfSpeech::Verb, self.verb);
+        f(PartOfSpeech::Adjective, self.adjective);
+        f(PartOfSpeech::Adverb, self.adverb);
+    }
+}

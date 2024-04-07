@@ -238,7 +238,7 @@ impl Server {
                             let response = match self
                                 .get_word_from_document(&tdp)
                                 .into_iter()
-                                .find(|w| !self.dict.wordnet.lemmatize(w).is_empty())
+                                .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
                             {
                                 Some(w) => {
                                     if let Some(text) = self.dict.hover(&w) {
@@ -283,7 +283,7 @@ impl Server {
                             let response = match self
                                 .get_word_from_document(&tdp)
                                 .into_iter()
-                                .find(|w| !self.dict.wordnet.lemmatize(w).is_empty())
+                                .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
                             {
                                 Some(w) => match self.dict.all_info_file(&w) {
                                     Some(filename) => {
@@ -323,7 +323,7 @@ impl Server {
                             let response = match self
                                 .get_word_from_document(&tdp)
                                 .into_iter()
-                                .find(|w| !self.dict.wordnet.lemmatize(w).is_empty())
+                                .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
                             {
                                 Some(word) => {
                                     let start = match self.dict.all_words.binary_search(&word) {
@@ -685,15 +685,17 @@ impl Dict {
 
     fn hover(&self, word: &str) -> Option<String> {
         let lemmas = self.wordnet.lemmatize(word);
-        if lemmas.is_empty() {
+        if lemmas.all(|w| w.is_empty()) {
             return None;
         }
         let mut content = String::new();
-        for lemma in lemmas {
-            let synsets = self.wordnet.synsets(&lemma);
-            let hover = self.render_hover(&lemma, synsets);
-            writeln!(content, "{hover}\n").unwrap();
-        }
+        lemmas.for_each(|pos, lemmas| {
+            lemmas.into_iter().for_each(|lemma| {
+                let synsets = self.wordnet.synsets_for(&lemma, pos);
+                let hover = self.render_hover(&lemma, synsets);
+                writeln!(content, "{hover}\n").unwrap();
+            });
+        });
         Some(content.trim().to_owned())
     }
 
@@ -776,102 +778,104 @@ impl Dict {
 
     fn all_info(&self, word: &str) -> Option<String> {
         let lemmas = self.wordnet.lemmatize(word);
-        if lemmas.is_empty() {
+        if lemmas.all(|t| t.is_empty()) {
             return None;
         }
         let mut content = String::new();
-        for lemma in lemmas {
-            let synsets = self.wordnet.synsets(&lemma);
-            writeln!(content, "# {lemma}").unwrap();
-            for (i, synset) in synsets.into_iter().enumerate() {
-                let definition = synset.definition;
-                let pos = synset.part_of_speech.to_string();
+        lemmas.for_each(|pos, lemmas| {
+            lemmas.into_iter().for_each(|lemma| {
+                let synsets = self.wordnet.synsets_for(&lemma, pos);
+                writeln!(content, "# {lemma}").unwrap();
+                for (i, synset) in synsets.into_iter().enumerate() {
+                    let definition = synset.definition;
+                    let pos = synset.part_of_speech.to_string();
 
-                let i = i + 1;
-                write!(content, "\n{i}. _{pos}_ {definition}.").unwrap();
-                let examples = synset.examples.join("; ");
-                if !examples.is_empty() {
-                    writeln!(content, " e.g. {examples}.").unwrap();
-                } else {
-                    writeln!(content).unwrap();
+                    let i = i + 1;
+                    write!(content, "\n{i}. _{pos}_ {definition}.").unwrap();
+                    let examples = synset.examples.join("; ");
+                    if !examples.is_empty() {
+                        writeln!(content, " e.g. {examples}.").unwrap();
+                    } else {
+                        writeln!(content).unwrap();
+                    }
+
+                    let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> =
+                        BTreeMap::new();
+                    for r in synset.relationships {
+                        relationships.entry(r.relation).or_default().extend(
+                            self.wordnet
+                                .resolve(r.part_of_speech, r.synset_offset)
+                                .unwrap()
+                                .synonyms(),
+                        );
+                    }
+                    let relationships = relationships
+                        .into_iter()
+                        .map(|(r, w)| (r.to_string(), w))
+                        .collect::<BTreeMap<_, _>>();
+                    let relationships_str = relationships
+                        .into_iter()
+                        .map(|(relation, words)| {
+                            format!(
+                                "**{relation}**: {}",
+                                words.into_iter().collect::<Vec<_>>().join(", ")
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n");
+
+                    if !relationships_str.is_empty() {
+                        writeln!(content, "{relationships_str}").unwrap()
+                    }
+
+                    let lemma_relationships = synset
+                        .lemmas
+                        .iter()
+                        .filter(|l| l.word != lemma)
+                        .map(|l| {
+                            (
+                                l.word.clone(),
+                                l.relationships
+                                    .iter()
+                                    .map(|lr| {
+                                        (
+                                            lr.relation,
+                                            self.wordnet
+                                                .resolve(lr.part_of_speech, lr.synset_offset)
+                                                .unwrap()
+                                                .synonyms()[lr.target]
+                                                .clone(),
+                                        )
+                                    })
+                                    .filter(|(_, w)| *w != l.word)
+                                    .collect::<BTreeMap<LexicalRelation, String>>(),
+                            )
+                        })
+                        .collect::<BTreeMap<_, _>>();
+                    let lemma_relationships_str = lemma_relationships
+                        .into_iter()
+                        .map(|(word, relationships)| {
+                            let relationships_str = relationships
+                                .into_iter()
+                                .map(|(relation, word)| format!("- **{relation}**: {word}"))
+                                .collect::<Vec<String>>()
+                                .join("\n  ");
+                            if relationships_str.is_empty() {
+                                format!("- {word}")
+                            } else {
+                                format!("- {word}:\n  {relationships_str}")
+                            }
+                        })
+                        .collect::<Vec<String>>()
+                        .join("\n");
+
+                    if !lemma_relationships_str.is_empty() {
+                        writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
+                    }
                 }
-
-                let mut relationships: BTreeMap<SemanticRelation, BTreeSet<String>> =
-                    BTreeMap::new();
-                for r in synset.relationships {
-                    relationships.entry(r.relation).or_default().extend(
-                        self.wordnet
-                            .resolve(r.part_of_speech, r.synset_offset)
-                            .unwrap()
-                            .synonyms(),
-                    );
-                }
-                let relationships = relationships
-                    .into_iter()
-                    .map(|(r, w)| (r.to_string(), w))
-                    .collect::<BTreeMap<_, _>>();
-                let relationships_str = relationships
-                    .into_iter()
-                    .map(|(relation, words)| {
-                        format!(
-                            "**{relation}**: {}",
-                            words.into_iter().collect::<Vec<_>>().join(", ")
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\n");
-
-                if !relationships_str.is_empty() {
-                    writeln!(content, "{relationships_str}").unwrap()
-                }
-
-                let lemma_relationships = synset
-                    .lemmas
-                    .iter()
-                    .filter(|l| l.word != lemma)
-                    .map(|l| {
-                        (
-                            l.word.clone(),
-                            l.relationships
-                                .iter()
-                                .map(|lr| {
-                                    (
-                                        lr.relation,
-                                        self.wordnet
-                                            .resolve(lr.part_of_speech, lr.synset_offset)
-                                            .unwrap()
-                                            .synonyms()[lr.target]
-                                            .clone(),
-                                    )
-                                })
-                                .filter(|(_, w)| *w != l.word)
-                                .collect::<BTreeMap<LexicalRelation, String>>(),
-                        )
-                    })
-                    .collect::<BTreeMap<_, _>>();
-                let lemma_relationships_str = lemma_relationships
-                    .into_iter()
-                    .map(|(word, relationships)| {
-                        let relationships_str = relationships
-                            .into_iter()
-                            .map(|(relation, word)| format!("- **{relation}**: {word}"))
-                            .collect::<Vec<String>>()
-                            .join("\n  ");
-                        if relationships_str.is_empty() {
-                            format!("- {word}")
-                        } else {
-                            format!("- {word}:\n  {relationships_str}")
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n");
-
-                if !lemma_relationships_str.is_empty() {
-                    writeln!(content, "**synonyms**:\n{lemma_relationships_str}").unwrap();
-                }
-            }
-            writeln!(content).unwrap();
-        }
+                writeln!(content).unwrap();
+            })
+        });
         Some(content.trim().to_owned())
     }
 }
@@ -1444,6 +1448,40 @@ mod tests {
             6. the center around which something rotates.
 
             **Synonyms**: Axis, axis of rotation, axis vertebra, bloc"#]];
+        expected.assert_eq(&hover);
+    }
+
+    #[test]
+    fn hover_is() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let hover = dict.hover("is").unwrap();
+        let expected = expect![[r#"
+            **i** _noun_
+            1. a nonmetallic element belonging to the halogens; used especially in medicine and photography and in dyes; occurs naturally only in combination in small quantities (as in sea water or rocks).
+            2. the smallest whole number or a numeral representing this number. e.g. he has the one but will need a two and three to go with it; they had lunch at one.
+            3. the 9th letter of the Roman alphabet.
+
+            **Synonyms**: 1, I, ace, atomic number 53, iodin, iodine, one, single, unity
+
+            **be** _verb_
+            1. have the quality of being; (copula, used with an adjective or a predicate noun). e.g. John is rich; This is not a good answer.
+            2. be identical to; be someone or something. e.g. The president of the company is John Smith; This is my house.
+            3. occupy a certain position or area; be somewhere. e.g. Where is my umbrella?" "The toolshed is in the back; What is behind this behavior?.
+            4. have an existence, be extant. e.g. Is there a God?.
+            5. happen, occur, take place. e.g. I lost my wallet; this was during the visit to my parents' house; There were two hundred people at his funeral; There was a lot of noise in the kitchen.
+            6. be identical or equivalent to. e.g. One dollar equals 1,000 rubles these days!.
+            7. form or compose. e.g. This money is my only income; The stone wall was the backdrop for the performance; These constitute my entire belonging; The children made up the chorus; This sum represents my entire income for a year; These few men comprise his entire army.
+            8. work in a specific place, with a specific subject, or in a specific function. e.g. He is a herpetologist; She is our resident philosopher.
+            9. represent, as of a character on stage. e.g. Derek Jacobi was Hamlet.
+            10. spend or use time. e.g. I may be an hour.
+            11. have life, be alive. e.g. Our great leader is no more; My grandfather lived until the end of war.
+            12. to remain unmolested, undisturbed, or uninterrupted -- used only in infinitive form. e.g. let her be.
+            13. be priced at. e.g. These shoes cost $100.
+
+            **Synonyms**: comprise, constitute, cost, embody, equal, exist, follow, live, make up, personify, represent
+
+            **Antonyms**: differ"#]];
         expected.assert_eq(&hover);
     }
 
