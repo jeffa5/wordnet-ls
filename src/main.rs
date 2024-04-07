@@ -587,6 +587,9 @@ fn get_word_from_content(content: &str, line: usize, character: usize) -> Vec<St
         for c in WORD_PUNC.chars() {
             if let Some(w) = word.strip_prefix(c) {
                 words.push(w.to_owned());
+                if let Some(w) = w.strip_suffix(c) {
+                    words.push(w.to_owned());
+                }
             }
             if let Some(w) = word.strip_suffix(c) {
                 words.push(w.to_owned());
@@ -1800,6 +1803,22 @@ mod tests {
                 "2: [\"hood\", \"'hood\"]",
                 "3: [\"hood\", \"'hood\"]",
                 "4: [\"hood\", \"'hood\"]",
+            ]
+        "#]];
+        check_get_word(text, expected)
+    }
+
+    #[test]
+    fn get_word_apostrophes() {
+        let text = "'hood'";
+        let expected = expect![[r#"
+            [
+                "0: [\"'hood\", \"hood\", \"hood'\", \"'hood'\"]",
+                "1: [\"'hood\", \"hood\", \"hood'\", \"'hood'\"]",
+                "2: [\"'hood\", \"hood\", \"hood'\", \"'hood'\"]",
+                "3: [\"'hood\", \"hood\", \"hood'\", \"'hood'\"]",
+                "4: [\"'hood\", \"hood\", \"hood'\", \"'hood'\"]",
+                "5: [\"'hood\", \"hood\", \"hood'\", \"'hood'\"]",
             ]
         "#]];
         check_get_word(text, expected)
