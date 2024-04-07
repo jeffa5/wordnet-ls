@@ -401,31 +401,24 @@ impl Server {
                                 position: cap.range.start,
                             };
 
-                            // TODO: update to offer definitions for all found words
-                            let response = match self.get_word_from_document(&tdp).first() {
-                                Some(w) => {
-                                    let resp = lsp_types::CodeActionOrCommand::Command(
-                                        lsp_types::Command {
-                                            title: format!("Define {w:?}"),
-                                            command: "define".to_owned(),
-                                            arguments: Some(vec![serde_json::Value::String(
-                                                w.to_owned(),
-                                            )]),
-                                        },
-                                    );
-                                    let resp = vec![resp];
-                                    Message::Response(Response {
-                                        id: r.id,
-                                        result: Some(serde_json::to_value(resp).unwrap()),
-                                        error: None,
+                            let words = self.get_word_from_document(&tdp);
+                            let completion_items = words
+                                .into_iter()
+                                .map(|w| {
+                                    lsp_types::CodeActionOrCommand::Command(lsp_types::Command {
+                                        title: format!("Define {w:?}"),
+                                        command: "define".to_owned(),
+                                        arguments: Some(vec![serde_json::Value::String(
+                                            w.to_owned(),
+                                        )]),
                                     })
-                                }
-                                None => Message::Response(Response {
-                                    id: r.id,
-                                    result: None,
-                                    error: None,
-                                }),
-                            };
+                                })
+                                .collect::<Vec<_>>();
+                            let response = Message::Response(Response {
+                                id: r.id,
+                                result: Some(serde_json::to_value(completion_items).unwrap()),
+                                error: None,
+                            });
 
                             c.sender.send(response).unwrap()
                         }
