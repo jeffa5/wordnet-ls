@@ -316,24 +316,8 @@ impl Server {
                                 .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
                             {
                                 Some(word) => {
-                                    let start = match self.dict.all_words.binary_search(&word) {
-                                        Ok(v) => v,
-                                        Err(v) => v,
-                                    };
                                     let limit = 100;
-                                    let matched_words = self
-                                        .dict
-                                        .all_words
-                                        .iter()
-                                        .skip(start)
-                                        .filter(|w| w.starts_with(&word))
-                                        .take(limit);
-                                    let completion_items: Vec<_> = matched_words
-                                        .map(|mw| CompletionItem {
-                                            label: mw.clone(),
-                                            ..Default::default()
-                                        })
-                                        .collect();
+                                    let completion_items = self.complete(&word, limit);
                                     let resp =
                                         lsp_types::CompletionResponse::List(CompletionList {
                                             is_incomplete: completion_items.len() == limit,
@@ -572,6 +556,26 @@ impl Server {
             tdp.position.line as usize,
             tdp.position.character as usize,
         )
+    }
+
+    fn complete(&self, word: &String, limit: usize) -> Vec<CompletionItem> {
+        let start = match self.dict.all_words.binary_search(word) {
+            Ok(v) => v,
+            Err(v) => v,
+        };
+        let matched_words = self
+            .dict
+            .all_words
+            .iter()
+            .skip(start)
+            .filter(|w| w.starts_with(word))
+            .take(limit);
+        matched_words
+            .map(|mw| CompletionItem {
+                label: mw.clone(),
+                ..Default::default()
+            })
+            .collect()
     }
 }
 
