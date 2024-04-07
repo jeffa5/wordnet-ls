@@ -234,7 +234,7 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self.get_word(&tdp) {
+                            let response = match self.get_word_from_document(&tdp) {
                                 Some(w) => {
                                     if let Some(text) = self.dict.hover(&w) {
                                         let resp = lsp_types::Hover {
@@ -275,7 +275,7 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self.get_word(&tdp) {
+                            let response = match self.get_word_from_document(&tdp) {
                                 Some(w) => match self.dict.all_info_file(&w) {
                                     Some(filename) => {
                                         let resp =
@@ -311,7 +311,7 @@ impl Server {
                             .unwrap();
 
                             tdp.position.character -= 1;
-                            let response = match self.get_word(&tdp) {
+                            let response = match self.get_word_from_document(&tdp) {
                                 Some(word) => {
                                     let start = match self.dict.all_words.binary_search(&word) {
                                         Ok(v) => v,
@@ -388,7 +388,7 @@ impl Server {
                                 position: cap.range.start,
                             };
 
-                            let response = match self.get_word(&tdp) {
+                            let response = match self.get_word_from_document(&tdp) {
                                 Some(w) => {
                                     let resp = lsp_types::CodeActionOrCommand::Command(
                                         lsp_types::Command {
@@ -564,44 +564,59 @@ impl Server {
         }
     }
 
-    fn get_word(&self, tdp: &lsp_types::TextDocumentPositionParams) -> Option<String> {
+    fn get_word_from_document(
+        &self,
+        tdp: &lsp_types::TextDocumentPositionParams,
+    ) -> Option<String> {
         let content = self.get_file_content(&tdp.text_document.uri);
-        let line = match content.lines().nth(tdp.position.line as usize) {
-            None => return None,
-            Some(l) => l,
-        };
+        get_word_from_content(
+            &content,
+            tdp.position.line as usize,
+            tdp.position.character as usize,
+        )
+    }
+}
 
-        let mut current_word = String::new();
-        let mut found = false;
-        let word_char = |c: char| c.is_alphabetic() || c == '_';
-        for (i, c) in line.chars().enumerate() {
-            if word_char(c) {
-                for c in c.to_lowercase() {
-                    current_word.push(c);
-                }
-            } else {
-                if found {
-                    return Some(current_word);
-                }
-                current_word.clear();
+fn get_word_from_content(content: &str, line: usize, character: usize) -> Option<String> {
+    let line = match content.lines().nth(line) {
+        None => return None,
+        Some(l) => l,
+    };
+
+    let mut current_word = String::new();
+    let mut found = false;
+    let word_char = |c: char| c.is_alphabetic() || c == '_';
+    for (i, c) in line.chars().enumerate() {
+        if word_char(c) {
+            for c in c.to_lowercase() {
+                current_word.push(c);
             }
-
-            if i == tdp.position.character as usize {
-                found = true
-            }
-
-            if !word_char(c) && found {
+        } else {
+            if found {
                 return Some(current_word);
             }
+            current_word.clear();
         }
 
-        // got to end of line
-        if found {
+        if i == character {
+            if word_char(c) {
+                found = true
+            } else {
+                return None;
+            }
+        }
+
+        if !word_char(c) && found {
             return Some(current_word);
         }
-
-        None
     }
+
+    // got to end of line
+    if found {
+        return Some(current_word);
+    }
+
+    None
 }
 
 fn main() {
@@ -841,7 +856,7 @@ mod tests {
     use std::env;
 
     use super::*;
-    use expect_test::expect;
+    use expect_test::{expect, Expect};
 
     #[test]
     fn hover_woman() {
@@ -1476,5 +1491,120 @@ mod tests {
             **synonyms**:
             - axis_of_rotation"#]];
         expected.assert_eq(&info);
+    }
+
+    fn check_get_word(content: &str, expected: Expect) {
+        let words = (0..content.len())
+            .map(|i| (i, get_word_from_content(content, 0, i)))
+            .map(|(i, ret)| format!("{i}: {ret:?}"))
+            .collect::<Vec<_>>();
+        expected.assert_debug_eq(&words)
+    }
+
+    #[test]
+    fn get_word() {
+        let text = "runner";
+        let expected = expect![[r#"
+            [
+                "0: Some(\"runner\")",
+                "1: Some(\"runner\")",
+                "2: Some(\"runner\")",
+                "3: Some(\"runner\")",
+                "4: Some(\"runner\")",
+                "5: Some(\"runner\")",
+            ]
+        "#]];
+        check_get_word(text, expected)
+    }
+
+    #[test]
+    fn get_word_with_spaces() {
+        let text = "a runner runs";
+        let expected = expect![[r#"
+            [
+                "0: Some(\"a\")",
+                "1: None",
+                "2: Some(\"runner\")",
+                "3: Some(\"runner\")",
+                "4: Some(\"runner\")",
+                "5: Some(\"runner\")",
+                "6: Some(\"runner\")",
+                "7: Some(\"runner\")",
+                "8: None",
+                "9: Some(\"runs\")",
+                "10: Some(\"runs\")",
+                "11: Some(\"runs\")",
+                "12: Some(\"runs\")",
+            ]
+        "#]];
+        check_get_word(text, expected)
+    }
+
+    #[test]
+    fn get_word_with_spaces_and_punctuation() {
+        let text = "new, for sale.";
+        let expected = expect![[r#"
+            [
+                "0: Some(\"new\")",
+                "1: Some(\"new\")",
+                "2: Some(\"new\")",
+                "3: None",
+                "4: None",
+                "5: Some(\"for\")",
+                "6: Some(\"for\")",
+                "7: Some(\"for\")",
+                "8: None",
+                "9: Some(\"sale\")",
+                "10: Some(\"sale\")",
+                "11: Some(\"sale\")",
+                "12: Some(\"sale\")",
+                "13: None",
+            ]
+        "#]];
+        check_get_word(text, expected)
+    }
+
+    #[test]
+    fn get_word_underscore() {
+        let text = "living_thing";
+        let expected = expect![[r#"
+            [
+                "0: Some(\"living_thing\")",
+                "1: Some(\"living_thing\")",
+                "2: Some(\"living_thing\")",
+                "3: Some(\"living_thing\")",
+                "4: Some(\"living_thing\")",
+                "5: Some(\"living_thing\")",
+                "6: Some(\"living_thing\")",
+                "7: Some(\"living_thing\")",
+                "8: Some(\"living_thing\")",
+                "9: Some(\"living_thing\")",
+                "10: Some(\"living_thing\")",
+                "11: Some(\"living_thing\")",
+            ]
+        "#]];
+        check_get_word(text, expected)
+    }
+
+    #[test]
+    fn get_word_two_words() {
+        let text = "living thing";
+        let expected = expect![[r#"
+            [
+                "0: Some(\"living\")",
+                "1: Some(\"living\")",
+                "2: Some(\"living\")",
+                "3: Some(\"living\")",
+                "4: Some(\"living\")",
+                "5: Some(\"living\")",
+                "6: None",
+                "7: Some(\"thing\")",
+                "8: Some(\"thing\")",
+                "9: Some(\"thing\")",
+                "10: Some(\"thing\")",
+                "11: Some(\"thing\")",
+            ]
+        "#]];
+        check_get_word(text, expected)
     }
 }
