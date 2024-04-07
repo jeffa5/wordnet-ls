@@ -235,9 +235,13 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self.get_word_from_document(&tdp).first() {
+                            let response = match self
+                                .get_word_from_document(&tdp)
+                                .into_iter()
+                                .find(|w| !self.dict.wordnet.lemmatize(w).is_empty())
+                            {
                                 Some(w) => {
-                                    if let Some(text) = self.dict.hover(w) {
+                                    if let Some(text) = self.dict.hover(&w) {
                                         let resp = lsp_types::Hover {
                                             contents: lsp_types::HoverContents::Markup(
                                                 lsp_types::MarkupContent {
@@ -276,8 +280,12 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self.get_word_from_document(&tdp).first() {
-                                Some(w) => match self.dict.all_info_file(w) {
+                            let response = match self
+                                .get_word_from_document(&tdp)
+                                .into_iter()
+                                .find(|w| !self.dict.wordnet.lemmatize(w).is_empty())
+                            {
+                                Some(w) => match self.dict.all_info_file(&w) {
                                     Some(filename) => {
                                         let resp =
                                             lsp_types::GotoDefinitionResponse::Scalar(Location {
@@ -312,9 +320,13 @@ impl Server {
                             .unwrap();
 
                             tdp.position.character -= 1;
-                            let response = match self.get_word_from_document(&tdp).first() {
+                            let response = match self
+                                .get_word_from_document(&tdp)
+                                .into_iter()
+                                .find(|w| !self.dict.wordnet.lemmatize(w).is_empty())
+                            {
                                 Some(word) => {
-                                    let start = match self.dict.all_words.binary_search(word) {
+                                    let start = match self.dict.all_words.binary_search(&word) {
                                         Ok(v) => v,
                                         Err(v) => v,
                                     };
@@ -324,7 +336,7 @@ impl Server {
                                         .all_words
                                         .iter()
                                         .skip(start)
-                                        .filter(|w| w.starts_with(word))
+                                        .filter(|w| w.starts_with(&word))
                                         .take(limit);
                                     let completion_items: Vec<_> = matched_words
                                         .map(|mw| CompletionItem {
@@ -588,8 +600,13 @@ fn get_word_from_content(content: &str, line: usize, character: usize) -> Vec<St
     if let Some(word) = get_word_from_line(line, character) {
         words.push(word.clone());
         // now try and simplify the word
-        if let Some(w) = word.strip_prefix('\'') {
-            words.push(w.to_owned());
+        for c in WORD_PUNC.chars() {
+            if let Some(w) = word.strip_prefix(c) {
+                words.push(w.to_owned());
+            }
+            if let Some(w) = word.strip_suffix(c) {
+                words.push(w.to_owned());
+            }
         }
     }
     // sort by length to try and find the simplest
@@ -604,10 +621,12 @@ fn get_word_from_content(content: &str, line: usize, character: usize) -> Vec<St
     words
 }
 
+const WORD_PUNC: &str = "_-'./";
+
 fn get_word_from_line(line: &str, character: usize) -> Option<String> {
     let mut current_word = String::new();
     let mut found = false;
-    let word_char = |c: char| c.is_alphanumeric() || "_-'./".contains(c);
+    let word_char = |c: char| c.is_alphanumeric() || WORD_PUNC.contains(c);
     for (i, c) in line.chars().enumerate() {
         if word_char(c) {
             for c in c.to_lowercase() {
@@ -1576,11 +1595,11 @@ mod tests {
                 "6: [\"for\"]",
                 "7: [\"for\"]",
                 "8: []",
-                "9: [\"sale.\"]",
-                "10: [\"sale.\"]",
-                "11: [\"sale.\"]",
-                "12: [\"sale.\"]",
-                "13: [\"sale.\"]",
+                "9: [\"sale\", \"sale.\"]",
+                "10: [\"sale\", \"sale.\"]",
+                "11: [\"sale\", \"sale.\"]",
+                "12: [\"sale\", \"sale.\"]",
+                "13: [\"sale\", \"sale.\"]",
             ]
         "#]];
         check_get_word(text, expected)
@@ -1735,6 +1754,7 @@ mod tests {
                 (
                     ".22-calibre",
                     [
+                        "22-calibre",
                         ".22-calibre",
                     ],
                     true,
@@ -1742,6 +1762,7 @@ mod tests {
                 (
                     ".38-calibre",
                     [
+                        "38-calibre",
                         ".38-calibre",
                     ],
                     true,
@@ -1749,6 +1770,7 @@ mod tests {
                 (
                     ".45-calibre",
                     [
+                        "45-calibre",
                         ".45-calibre",
                     ],
                     true,
@@ -1973,6 +1995,7 @@ mod tests {
                 (
                     "w.m.d.",
                     [
+                        "w.m.d",
                         "w.m.d.",
                     ],
                     true,
@@ -1987,6 +2010,7 @@ mod tests {
                 (
                     ".22",
                     [
+                        "22",
                         ".22",
                     ],
                     true,
@@ -1994,6 +2018,7 @@ mod tests {
                 (
                     ".22_calibre",
                     [
+                        "22_calibre",
                         ".22_calibre",
                     ],
                     true,
@@ -2001,6 +2026,7 @@ mod tests {
                 (
                     ".38_calibre",
                     [
+                        "38_calibre",
                         ".38_calibre",
                     ],
                     true,
@@ -2008,6 +2034,7 @@ mod tests {
                 (
                     ".45_calibre",
                     [
+                        "45_calibre",
                         ".45_calibre",
                     ],
                     true,
