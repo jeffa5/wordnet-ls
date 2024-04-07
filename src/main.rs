@@ -236,7 +236,7 @@ impl Server {
                                 .unwrap();
 
                             let response = match self
-                                .get_word_from_document(&tdp)
+                                .get_words_from_document(&tdp)
                                 .into_iter()
                                 .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
                             {
@@ -280,7 +280,7 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let words = self.get_word_from_document(&tdp);
+                            let words = self.get_words_from_document(&tdp);
                             let response = match self.dict.all_info_file(&words) {
                                 Some(filename) => {
                                     let resp =
@@ -311,7 +311,7 @@ impl Server {
 
                             tdp.position.character -= 1;
                             let response = match self
-                                .get_word_from_document(&tdp)
+                                .get_words_from_document(&tdp)
                                 .into_iter()
                                 .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
                             {
@@ -391,7 +391,7 @@ impl Server {
                                 position: cap.range.start,
                             };
 
-                            let words = self.get_word_from_document(&tdp);
+                            let words = self.get_words_from_document(&tdp);
                             let completion_items = words
                                 .into_iter()
                                 .filter(|w| self.dict.wordnet.contains(w))
@@ -565,9 +565,9 @@ impl Server {
         }
     }
 
-    fn get_word_from_document(&self, tdp: &lsp_types::TextDocumentPositionParams) -> Vec<String> {
+    fn get_words_from_document(&self, tdp: &lsp_types::TextDocumentPositionParams) -> Vec<String> {
         let content = self.get_file_content(&tdp.text_document.uri);
-        get_word_from_content(
+        get_words_from_content(
             &content,
             tdp.position.line as usize,
             tdp.position.character as usize,
@@ -575,7 +575,7 @@ impl Server {
     }
 }
 
-fn get_word_from_content(content: &str, line: usize, character: usize) -> Vec<String> {
+fn get_words_from_content(content: &str, line: usize, character: usize) -> Vec<String> {
     let line = match content.lines().nth(line) {
         None => return Vec::new(),
         Some(l) => l,
@@ -1684,9 +1684,9 @@ mod tests {
         expected.assert_eq(&info);
     }
 
-    fn check_get_word(content: &str, expected: Expect) {
+    fn check_get_words(content: &str, expected: Expect) {
         let words = (0..content.len())
-            .map(|i| (i, get_word_from_content(content, 0, i)))
+            .map(|i| (i, get_words_from_content(content, 0, i)))
             .map(|(i, ret)| format!("{i}: {ret:?}"))
             .collect::<Vec<_>>();
         expected.assert_debug_eq(&words)
@@ -1705,11 +1705,11 @@ mod tests {
                 "5: [\"runner\"]",
             ]
         "#]];
-        check_get_word(text, expected)
+        check_get_words(text, expected)
     }
 
     #[test]
-    fn get_word_with_spaces() {
+    fn get_words_with_spaces() {
         let text = "a runner runs";
         let expected = expect![[r#"
             [
@@ -1728,11 +1728,11 @@ mod tests {
                 "12: [\"runs\"]",
             ]
         "#]];
-        check_get_word(text, expected)
+        check_get_words(text, expected)
     }
 
     #[test]
-    fn get_word_with_spaces_and_punctuation() {
+    fn get_words_with_spaces_and_punctuation() {
         let text = "new, for sale.";
         let expected = expect![[r#"
             [
@@ -1752,11 +1752,11 @@ mod tests {
                 "13: [\"sale\", \"sale.\"]",
             ]
         "#]];
-        check_get_word(text, expected)
+        check_get_words(text, expected)
     }
 
     #[test]
-    fn get_word_underscore() {
+    fn get_words_underscore() {
         let text = "living_thing";
         let expected = expect![[r#"
             [
@@ -1774,11 +1774,11 @@ mod tests {
                 "11: [\"living_thing\"]",
             ]
         "#]];
-        check_get_word(text, expected)
+        check_get_words(text, expected)
     }
 
     #[test]
-    fn get_word_two_words() {
+    fn get_words_two_words() {
         let text = "living thing";
         let expected = expect![[r#"
             [
@@ -1796,11 +1796,11 @@ mod tests {
                 "11: [\"thing\"]",
             ]
         "#]];
-        check_get_word(text, expected)
+        check_get_words(text, expected)
     }
 
     #[test]
-    fn get_word_apostrophe() {
+    fn get_words_apostrophe() {
         let text = "'hood";
         let expected = expect![[r#"
             [
@@ -1811,11 +1811,11 @@ mod tests {
                 "4: [\"hood\", \"'hood\"]",
             ]
         "#]];
-        check_get_word(text, expected)
+        check_get_words(text, expected)
     }
 
     #[test]
-    fn get_word_apostrophes() {
+    fn get_words_apostrophes() {
         let text = "'hood'";
         let expected = expect![[r#"
             [
@@ -1827,11 +1827,11 @@ mod tests {
                 "5: [\"'hood\", \"hood\", \"hood'\", \"'hood'\"]",
             ]
         "#]];
-        check_get_word(text, expected)
+        check_get_words(text, expected)
     }
 
     #[test]
-    fn get_word_all_punctuations() {
+    fn get_words_all_punctuations() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let wn = WordNet::new(&PathBuf::from(wndir));
         let words = wn
@@ -1854,7 +1854,7 @@ mod tests {
             })
             .into_values()
             .map(|word| {
-                let words = get_word_from_content(&word, 0, 0);
+                let words = get_words_from_content(&word, 0, 0);
                 let found = words.contains(&word);
                 (word, words, found)
             })
