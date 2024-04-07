@@ -587,6 +587,7 @@ fn get_word_from_content(content: &str, line: usize, character: usize) -> Vec<St
     let mut words = Vec::new();
     if let Some(word) = get_word_from_line(line, character) {
         words.push(word.clone());
+        // now try and simplify the word
         if let Some(w) = word.strip_prefix('\'') {
             words.push(w.to_owned());
         }
