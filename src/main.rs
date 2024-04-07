@@ -1568,6 +1568,113 @@ mod tests {
         expected.assert_eq(&info);
     }
 
+    #[test]
+    fn all_info_multiple_words() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let info = dict
+            .all_info(&["axes".to_owned(), "beta".to_owned()])
+            .unwrap();
+        let expected = expect![[r#"
+            # ax
+
+            1. _noun_ an edge tool with a heavy bladed head mounted across a handle.
+            **hypernym**: edge_tool
+            **hyponym**: Dayton_ax, Dayton_axe, Western_ax, Western_axe, broadax, broadaxe, common_ax, common_axe, double-bitted_ax, double-bitted_axe, fireman's_ax, fireman's_axe, hatchet, ice_ax, ice_axe, piolet, poleax, poleaxe
+            **part meronym**: ax_handle, ax_head, axe_handle, axe_head, blade, haft, helve
+            **synonyms**:
+            - axe
+
+            # axe
+
+            1. _noun_ an edge tool with a heavy bladed head mounted across a handle.
+            **hypernym**: edge_tool
+            **hyponym**: Dayton_ax, Dayton_axe, Western_ax, Western_axe, broadax, broadaxe, common_ax, common_axe, double-bitted_ax, double-bitted_axe, fireman's_ax, fireman's_axe, hatchet, ice_ax, ice_axe, piolet, poleax, poleaxe
+            **part meronym**: ax_handle, ax_head, axe_handle, axe_head, blade, haft, helve
+            **synonyms**:
+            - ax
+
+            # axis
+
+            1. _noun_ a straight line through a body or figure that satisfies certain conditions.
+            **hypernym**: line
+            **hyponym**: coordinate_axis, major_axis, minor_axis, optic_axis, principal_axis, semimajor_axis, semiminor_axis
+
+            2. _noun_ the main stem or central part about which plant organs or plant parts such as branches are arranged.
+            **hypernym**: stalk, stem
+            **hyponym**: rachis, spadix
+            **part meronym**: stele
+
+            3. _noun_ in World War II the alliance of Germany and Italy in 1936 which later included Japan and other nations. e.g. the Axis opposed the Allies in World War II.
+            **hypernym**: alignment, alinement, alliance, coalition
+            **synonyms**:
+            - Axis
+
+            4. _noun_ a group of countries in special alliance.
+            **hypernym**: alignment, alinement, alliance, coalition
+            **hyponym**: scheduled_territories, sterling_area, sterling_bloc
+            **synonyms**:
+            - bloc
+
+            5. _noun_ the 2nd cervical vertebra; serves as a pivot for turning the head.
+            **hypernym**: cervical_vertebra, neck_bone
+            **part meronym**: odontoid_process
+            **synonyms**:
+            - axis_vertebra
+
+            6. _noun_ the center around which something rotates.
+            **hypernym**: mechanism
+            **hyponym**: pin, pivot, rotor_head, rotor_shaft
+            **synonyms**:
+            - axis_of_rotation
+
+            # ax
+
+            1. _verb_ chop or split with an ax. e.g. axe wood.
+            **hypernym**: chop, hack
+            **synonyms**:
+            - axe
+
+            2. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
+            **hypernym**: end, terminate
+            **synonyms**:
+            - axe
+
+            # axe
+
+            1. _verb_ chop or split with an ax. e.g. axe wood.
+            **hypernym**: chop, hack
+            **synonyms**:
+            - ax
+
+            2. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
+            **hypernym**: end, terminate
+            **synonyms**:
+            - ax
+
+            # beta
+
+            1. _noun_ the 2nd letter of the Greek alphabet.
+            **hypernym**: alphabetic_character, letter, letter_of_the_alphabet
+            **member holonym**: Greek_alphabet
+
+            2. _noun_ beets.
+            **hypernym**: Chenopodiaceae, caryophylloid_dicot_genus, family_Chenopodiaceae, goosefoot_family
+            **member meronym**: Beta_vulgaris, beet, common_beet
+            **synonyms**:
+            - Beta
+            - genus_Beta
+
+            # beta
+
+            1. _adjective_ second in order of importance. e.g. the candidate, considered a beta male, was perceived to be unable to lead his party to victory.
+            **similar to**: important, of_import
+
+            2. _adjective_ preliminary or testing stage of a software or hardware product. e.g. a beta version; beta software.
+            **similar to**: explorative, exploratory"#]];
+        expected.assert_eq(&info);
+    }
+
     fn check_get_word(content: &str, expected: Expect) {
         let words = (0..content.len())
             .map(|i| (i, get_word_from_content(content, 0, i)))
