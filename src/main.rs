@@ -582,18 +582,25 @@ fn get_words_from_content(content: &str, line: usize, character: usize) -> Vec<S
     };
 
     let mut words = Vec::new();
+    let mut current_word = String::new();
     if let Some(word) = get_word_from_line(line, character) {
-        words.push(word.clone());
-        // now try and simplify the word
-        for c in WORD_PUNC.chars() {
-            if let Some(w) = word.strip_prefix(c) {
-                words.push(w.to_owned());
-                if let Some(w) = w.strip_suffix(c) {
+        for single_word in word.split_whitespace() {
+            if !current_word.is_empty() {
+                current_word.push('_');
+            }
+            current_word.push_str(single_word);
+            words.push(current_word.clone());
+            // now try and simplify the word
+            for c in WORD_PUNC.chars() {
+                if let Some(w) = current_word.strip_prefix(c) {
+                    words.push(w.to_owned());
+                    if let Some(w) = w.strip_suffix(c) {
+                        words.push(w.to_owned());
+                    }
+                }
+                if let Some(w) = current_word.strip_suffix(c) {
                     words.push(w.to_owned());
                 }
-            }
-            if let Some(w) = word.strip_suffix(c) {
-                words.push(w.to_owned());
             }
         }
     }
@@ -614,9 +621,10 @@ const WORD_PUNC: &str = "_-'./";
 fn get_word_from_line(line: &str, character: usize) -> Option<String> {
     let mut current_word = String::new();
     let mut found = false;
-    let word_char = |c: char| c.is_alphanumeric() || WORD_PUNC.contains(c);
+    let mut match_chars = WORD_PUNC.to_owned();
+    let word_char = |match_with: &str, c: char| c.is_alphanumeric() || match_with.contains(c);
     for (i, c) in line.chars().enumerate() {
-        if word_char(c) {
+        if word_char(&match_chars, c) {
             for c in c.to_lowercase() {
                 current_word.push(c);
             }
@@ -628,14 +636,15 @@ fn get_word_from_line(line: &str, character: usize) -> Option<String> {
         }
 
         if i == character {
-            if word_char(c) {
+            if word_char(&match_chars, c) {
+                match_chars.push(' ');
                 found = true
             } else {
                 return None;
             }
         }
 
-        if !word_char(c) && found {
+        if !word_char(&match_chars, c) && found {
             return Some(current_word);
         }
     }
@@ -1713,14 +1722,14 @@ mod tests {
         let text = "a runner runs";
         let expected = expect![[r#"
             [
-                "0: [\"a\"]",
+                "0: [\"a\", \"a_runner\", \"a_runner_runs\"]",
                 "1: []",
-                "2: [\"runner\"]",
-                "3: [\"runner\"]",
-                "4: [\"runner\"]",
-                "5: [\"runner\"]",
-                "6: [\"runner\"]",
-                "7: [\"runner\"]",
+                "2: [\"runner\", \"runner_runs\"]",
+                "3: [\"runner\", \"runner_runs\"]",
+                "4: [\"runner\", \"runner_runs\"]",
+                "5: [\"runner\", \"runner_runs\"]",
+                "6: [\"runner\", \"runner_runs\"]",
+                "7: [\"runner\", \"runner_runs\"]",
                 "8: []",
                 "9: [\"runs\"]",
                 "10: [\"runs\"]",
@@ -1741,9 +1750,9 @@ mod tests {
                 "2: [\"new\"]",
                 "3: []",
                 "4: []",
-                "5: [\"for\"]",
-                "6: [\"for\"]",
-                "7: [\"for\"]",
+                "5: [\"for\", \"for_sale\", \"for_sale.\"]",
+                "6: [\"for\", \"for_sale\", \"for_sale.\"]",
+                "7: [\"for\", \"for_sale\", \"for_sale.\"]",
                 "8: []",
                 "9: [\"sale\", \"sale.\"]",
                 "10: [\"sale\", \"sale.\"]",
@@ -1782,12 +1791,12 @@ mod tests {
         let text = "living thing";
         let expected = expect![[r#"
             [
-                "0: [\"living\"]",
-                "1: [\"living\"]",
-                "2: [\"living\"]",
-                "3: [\"living\"]",
-                "4: [\"living\"]",
-                "5: [\"living\"]",
+                "0: [\"living\", \"living_thing\"]",
+                "1: [\"living\", \"living_thing\"]",
+                "2: [\"living\", \"living_thing\"]",
+                "3: [\"living\", \"living_thing\"]",
+                "4: [\"living\", \"living_thing\"]",
+                "5: [\"living\", \"living_thing\"]",
                 "6: []",
                 "7: [\"thing\"]",
                 "8: [\"thing\"]",
