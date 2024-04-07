@@ -585,7 +585,7 @@ fn get_word_from_content(content: &str, line: usize, character: usize) -> Option
 
     let mut current_word = String::new();
     let mut found = false;
-    let word_char = |c: char| c.is_alphabetic() || c == '_';
+    let word_char = |c: char| c.is_alphabetic() || "_'".contains(c);
     for (i, c) in line.chars().enumerate() {
         if word_char(c) {
             for c in c.to_lowercase() {
@@ -1603,6 +1603,21 @@ mod tests {
                 "9: Some(\"thing\")",
                 "10: Some(\"thing\")",
                 "11: Some(\"thing\")",
+            ]
+        "#]];
+        check_get_word(text, expected)
+    }
+
+    #[test]
+    fn get_word_apostrophe() {
+        let text = "'hood";
+        let expected = expect![[r#"
+            [
+                "0: Some(\"'hood\")",
+                "1: Some(\"'hood\")",
+                "2: Some(\"'hood\")",
+                "3: Some(\"'hood\")",
+                "4: Some(\"'hood\")",
             ]
         "#]];
         check_get_word(text, expected)
