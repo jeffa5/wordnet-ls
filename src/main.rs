@@ -33,6 +33,7 @@ use lsp_types::TextDocumentSyncKind;
 use lsp_types::Url;
 use serde::Deserialize;
 use serde::Serialize;
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
@@ -590,7 +591,14 @@ fn get_word_from_content(content: &str, line: usize, character: usize) -> Vec<St
             words.push(w.to_owned());
         }
     }
-    words.sort_unstable();
+    // sort by length to try and find the simplest
+    words.sort_unstable_by(|s1, s2| {
+        if s1.len() < s2.len() {
+            Ordering::Less
+        } else {
+            s1.cmp(s2)
+        }
+    });
     words.dedup();
     words
 }
@@ -1626,11 +1634,11 @@ mod tests {
         let text = "'hood";
         let expected = expect![[r#"
             [
-                "0: [\"'hood\", \"hood\"]",
-                "1: [\"'hood\", \"hood\"]",
-                "2: [\"'hood\", \"hood\"]",
-                "3: [\"'hood\", \"hood\"]",
-                "4: [\"'hood\", \"hood\"]",
+                "0: [\"hood\", \"'hood\"]",
+                "1: [\"hood\", \"'hood\"]",
+                "2: [\"hood\", \"'hood\"]",
+                "3: [\"hood\", \"'hood\"]",
+                "4: [\"hood\", \"'hood\"]",
             ]
         "#]];
         check_get_word(text, expected)
