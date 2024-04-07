@@ -1127,12 +1127,14 @@ mod tests {
             16. _noun_ a short trip. e.g. take a run into town.
             **hypernym**: trip
 
-            17. _verb_ move fast by using one's feet, with one foot off the ground at any given time. e.g. Don't run--you'll be out of breath; The children ran to the store.
+            # run
+
+            1. _verb_ move fast by using one's feet, with one foot off the ground at any given time. e.g. Don't run--you'll be out of breath; The children ran to the store.
             **hypernym**: hurry, speed, travel_rapidly, zip
             **hyponym**: clip, hare, jog, lope, outrun, romp, run, run_bases, rush, scamper, scurry, scuttle, skitter, sprint, streak, trot
             **verb group**: run
 
-            18. _verb_ flee; take to one's heels; cut and run. e.g. If you see this man, run!; The burglars escaped before the police showed up.
+            2. _verb_ flee; take to one's heels; cut and run. e.g. If you see this man, run!; The burglars escaped before the police showed up.
             **hypernym**: go_away, go_forth, leave
             **hyponym**: flee, fly, skedaddle, take_flight
             **synonyms**:
@@ -1150,7 +1152,7 @@ mod tests {
             - take_to_the_woods
             - turn_tail
 
-            19. _verb_ stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point. e.g. Service runs all the way to Cranbury; His knowledge doesn't go very far; My memory extends back to my fourth year of life; The facts extend beyond a consideration of her personal assets.
+            3. _verb_ stretch out over a distance, space, time, or scope; run or extend between two points or beyond a certain point. e.g. Service runs all the way to Cranbury; His knowledge doesn't go very far; My memory extends back to my fourth year of life; The facts extend beyond a consideration of her personal assets.
             **hypernym**: be
             **hyponym**: come, go_deep, go_far, radiate, ray
             **verb group**: range, run
@@ -1162,19 +1164,19 @@ mod tests {
             - lead
             - pass
 
-            20. _verb_ direct or control; projects, businesses, etc.. e.g. She is running a relief operation in the Sudan.
+            4. _verb_ direct or control; projects, businesses, etc.. e.g. She is running a relief operation in the Sudan.
             **hypernym**: direct
             **hyponym**: block, financier, warm_up, work
             **synonyms**:
             - operate:
               - **derivationally related form**: operator
 
-            21. _verb_ have a particular form. e.g. the story or argument runs as follows; as the saying goes....
+            5. _verb_ have a particular form. e.g. the story or argument runs as follows; as the saying goes....
             **hypernym**: be
             **synonyms**:
             - go
 
-            22. _verb_ move along, of liquids. e.g. Water flowed into the cave; the Missouri feeds into the Mississippi.
+            6. _verb_ move along, of liquids. e.g. Water flowed into the cave; the Missouri feeds into the Mississippi.
             **hypernym**: move
             **hyponym**: circulate, drain, dribble, eddy, filter, flush, gush, gutter, jet, ooze, pour, purl, run_down, run_off, run_out, seep, spill, stream, surge, swirl, tide, trickle, waste, well_out, whirl, whirlpool
             **synonyms**:
@@ -1184,7 +1186,7 @@ mod tests {
               - **derivationally related form**: flowing
               - **also see**: flow_from
 
-            23. _verb_ perform as expected when applied. e.g. The washing machine won't go unless it's plugged in; Does this old car still run well?; This old radio doesn't work anymore.
+            7. _verb_ perform as expected when applied. e.g. The washing machine won't go unless it's plugged in; Does this old car still run well?; This old radio doesn't work anymore.
             **hyponym**: cut, double, roll, run, serve, service
             **verb group**: run, work
             **synonyms**:
@@ -1196,29 +1198,29 @@ mod tests {
               - **derivationally related form**: operation
             - work
 
-            24. _verb_ change or be different within limits. e.g. Estimates for the losses in the earthquake range as high as $2 billion; Interest rates run from 5 to 10 percent; The instruments ranged from tuba to cymbals; My students range from very bright to dull.
+            8. _verb_ change or be different within limits. e.g. Estimates for the losses in the earthquake range as high as $2 billion; Interest rates run from 5 to 10 percent; The instruments ranged from tuba to cymbals; My students range from very bright to dull.
             **hypernym**: be
             **verb group**: extend, go, lead, pass, run
             **synonyms**:
             - range
 
-            25. _verb_ run, stand, or compete for an office or a position. e.g. Who's running for treasurer this year?.
+            9. _verb_ run, stand, or compete for an office or a position. e.g. Who's running for treasurer this year?.
             **hypernym**: race, run
             **hyponym**: cross-file, register, rerun, stump, whistlestop
             **synonyms**:
             - campaign:
               - **derivationally related form**: campaigner
 
-            26. _verb_ cause to emit recorded audio or video. e.g. They ran the tapes over and over again; I'll play you my favorite record; He never tires of playing that video.
+            10. _verb_ cause to emit recorded audio or video. e.g. They ran the tapes over and over again; I'll play you my favorite record; He never tires of playing that video.
             **verb group**: execute, play, run
             **synonyms**:
             - play
 
-            27. _verb_ move about freely and without restraint, or act as if running around in an uncontrolled way. e.g. who are these people running around in the building?; She runs around telling everyone of her troubles; let the dogs run free.
+            11. _verb_ move about freely and without restraint, or act as if running around in an uncontrolled way. e.g. who are these people running around in the building?; She runs around telling everyone of her troubles; let the dogs run free.
             **hypernym**: go, locomote, move, travel
             **verb group**: run
 
-            28. _verb_ have a tendency or disposition to do or be something; be inclined. e.g. She tends to be nervous before her lectures; These dresses run small; He inclined to corpulence.
+            12. _verb_ have a tendency or disposition to do or be something; be inclined. e.g. She tends to be nervous before her lectures; These dresses run small; He inclined to corpulence.
             **hypernym**: be
             **hyponym**: gravitate, suffer, take_kindly_to
             **synonyms**:
@@ -1229,22 +1231,22 @@ mod tests {
             - tend:
               - **derivationally related form**: tendency
 
-            29. _verb_ be operating, running or functioning. e.g. The car is still running--turn it off!.
+            13. _verb_ be operating, running or functioning. e.g. The car is still running--turn it off!.
             **hypernym**: function, go, operate, run, work
             **verb group**: function, go, operate, run, work
 
-            30. _verb_ change from one state to another. e.g. run amok; run rogue; run riot.
+            14. _verb_ change from one state to another. e.g. run amok; run rogue; run riot.
             **hypernym**: become, get, go
 
-            31. _verb_ cause to perform. e.g. run a subject; run a process.
+            15. _verb_ cause to perform. e.g. run a subject; run a process.
             **hypernym**: process, treat
             **hyponym**: rerun
             **verb group**: play, run
 
-            32. _verb_ be affected by; be subjected to. e.g. run a temperature; run a risk.
+            16. _verb_ be affected by; be subjected to. e.g. run a temperature; run a risk.
             **hypernym**: incur
 
-            33. _verb_ continue to exist. e.g. These stories die hard; The legend of Elvis endures.
+            17. _verb_ continue to exist. e.g. These stories die hard; The legend of Elvis endures.
             **hypernym**: continue
             **hyponym**: carry_over, reverberate
             **verb group**: run
@@ -1257,11 +1259,11 @@ mod tests {
             - prevail:
               - **derivationally related form**: prevalent
 
-            34. _verb_ occur persistently. e.g. Musical talent runs in the family.
+            18. _verb_ occur persistently. e.g. Musical talent runs in the family.
             **hypernym**: occur
             **verb group**: die_hard, endure, persist, prevail, run
 
-            35. _verb_ carry out a process or program, as on a computer or a machine. e.g. Run the dishwasher; run a new program on the Mac; the computer executed the instruction.
+            19. _verb_ carry out a process or program, as on a computer or a machine. e.g. Run the dishwasher; run a new program on the Mac; the computer executed the instruction.
             **hypernym**: apply, enforce, implement
             **hyponym**: step
             **verb group**: play, run
@@ -1269,15 +1271,15 @@ mod tests {
             - execute:
               - **derivationally related form**: executive
 
-            36. _verb_ include as the content; broadcast or publicize. e.g. We ran the ad three times; This paper carries a restaurant review; All major networks carried the press conference.
+            20. _verb_ include as the content; broadcast or publicize. e.g. We ran the ad three times; This paper carries a restaurant review; All major networks carried the press conference.
             **hypernym**: broadcast, circularise, circularize, circulate, diffuse, disperse, disseminate, distribute, pass_around, propagate, spread
             **synonyms**:
             - carry
 
-            37. _verb_ carry out. e.g. run an errand.
+            21. _verb_ carry out. e.g. run an errand.
             **hypernym**: accomplish, action, carry_out, carry_through, execute, fulfil, fulfill
 
-            38. _verb_ pass over, across, or through. e.g. He ran his eyes over her body; She ran her fingers along the carved figurine; He drew her hair through his fingers.
+            22. _verb_ pass over, across, or through. e.g. He ran his eyes over her body; She ran her fingers along the carved figurine; He drew her hair through his fingers.
             **hyponym**: rub, thread
             **verb group**: draw, lead, run, string, thread
             **synonyms**:
@@ -1286,71 +1288,71 @@ mod tests {
             - pass:
               - **also see**: pass_around
 
-            39. _verb_ cause something to pass or lead somewhere. e.g. Run the wire behind the cabinet.
+            23. _verb_ cause something to pass or lead somewhere. e.g. Run the wire behind the cabinet.
             **hypernym**: make_pass, pass
             **verb group**: draw, guide, pass, range, run
             **synonyms**:
             - lead
 
-            40. _verb_ make without a miss.
+            24. _verb_ make without a miss.
             **domain of synset topic**: athletics, sport
             **hypernym**: bring_home_the_bacon, come_through, deliver_the_goods, succeed, win
 
-            41. _verb_ deal in illegally, such as arms or liquor.
+            25. _verb_ deal in illegally, such as arms or liquor.
             **domain of synset topic**: crime, criminal_offence, criminal_offense, law-breaking, offence, offense
             **hypernym**: merchandise, trade
             **verb group**: ply, run
             **synonyms**:
             - black_market
 
-            42. _verb_ cause an animal to move fast. e.g. run the dogs.
+            26. _verb_ cause an animal to move fast. e.g. run the dogs.
             **hypernym**: displace, move
             **verb group**: hunt, hunt_down, run, track_down
 
-            43. _verb_ be diffused. e.g. These dyes and colors are guaranteed not to run.
+            27. _verb_ be diffused. e.g. These dyes and colors are guaranteed not to run.
             **hypernym**: diffuse, fan_out, spread, spread_out
             **hyponym**: crock
             **verb group**: melt, melt_down, run
             **synonyms**:
             - bleed
 
-            44. _verb_ sail before the wind.
+            28. _verb_ sail before the wind.
             **hypernym**: sail
 
-            45. _verb_ cover by running; run a certain distance. e.g. She ran 10 miles that day.
+            29. _verb_ cover by running; run a certain distance. e.g. She ran 10 miles that day.
             **hypernym**: go_across, go_through, pass
             **verb group**: run
 
-            46. _verb_ extend or continue for a certain period of time. e.g. The film runs 5 hours.
+            30. _verb_ extend or continue for a certain period of time. e.g. The film runs 5 hours.
             **hypernym**: endure, last
             **synonyms**:
             - run_for
 
-            47. _verb_ set animals loose to graze.
+            31. _verb_ set animals loose to graze.
             **hypernym**: free, liberate, loose, release, unloose, unloosen
             **verb group**: run
 
-            48. _verb_ keep company. e.g. the heifers run with the bulls to produce offspring.
+            32. _verb_ keep company. e.g. the heifers run with the bulls to produce offspring.
             **hypernym**: accompany
             **synonyms**:
             - consort
 
-            49. _verb_ run with the ball; in such sports as football.
+            33. _verb_ run with the ball; in such sports as football.
             **domain of synset topic**: athletics, sport
             **hypernym**: run
 
-            50. _verb_ travel rapidly, by any (unspecified) means. e.g. Run to the store!; She always runs to Italy, because she has a lover there.
+            34. _verb_ travel rapidly, by any (unspecified) means. e.g. Run to the store!; She always runs to Italy, because she has a lover there.
             **hypernym**: go, locomote, move, travel
             **verb group**: run
 
-            51. _verb_ travel a route regularly. e.g. Ships ply the waters near the coast.
+            35. _verb_ travel a route regularly. e.g. Ships ply the waters near the coast.
             **hypernym**: jaunt, travel, trip
             **verb group**: black_market, run
             **synonyms**:
             - ply:
               - **derivationally related form**: plier
 
-            52. _verb_ pursue for food or sport (as of wild animals). e.g. Goering often hunted wild boars in Poland; The dogs are running deer; The Duke hunted in these woods.
+            36. _verb_ pursue for food or sport (as of wild animals). e.g. Goering often hunted wild boars in Poland; The dogs are running deer; The Duke hunted in these woods.
             **hypernym**: capture, catch
             **hyponym**: ambush, course, drive, falcon, ferret, forage, fowl, foxhunt, hawk, jack, jacklight, poach, rabbit, scrounge, seal, snipe, still-hunt, turtle, whale
             **verb group**: hunt, run
@@ -1360,20 +1362,20 @@ mod tests {
             - hunt_down
             - track_down
 
-            53. _verb_ compete in a race. e.g. he is running the Marathon this year; let's race and see who gets there first.
+            37. _verb_ compete in a race. e.g. he is running the Marathon this year; let's race and see who gets there first.
             **hypernym**: compete, contend, vie
             **hyponym**: boat-race, campaign, horse-race, place, run, show, speed_skate
             **synonyms**:
             - race:
               - **derivationally related form**: racing
 
-            54. _verb_ progress by being changed. e.g. The speech has to go through several more drafts; run through your presentation before the meeting.
+            38. _verb_ progress by being changed. e.g. The speech has to go through several more drafts; run through your presentation before the meeting.
             **hypernym**: change
             **synonyms**:
             - go
             - move
 
-            55. _verb_ reduce or cause to be reduced from a solid to a liquid state, usually by heating. e.g. melt butter; melt down gold; The wax melted in the sun.
+            39. _verb_ reduce or cause to be reduced from a solid to a liquid state, usually by heating. e.g. melt butter; melt down gold; The wax melted in the sun.
             **hypernym**: break_up, dissolve, resolve
             **hyponym**: fuse, render, try
             **verb group**: bleed, run
@@ -1382,13 +1384,13 @@ mod tests {
               - **derivationally related form**: melting
             - melt_down
 
-            56. _verb_ come unraveled or undone as if by snagging. e.g. Her nylons were running.
+            40. _verb_ come unraveled or undone as if by snagging. e.g. Her nylons were running.
             **hypernym**: break, come_apart, fall_apart, separate, split_up
             **verb group**: run, unravel
             **synonyms**:
             - ladder
 
-            57. _verb_ become undone. e.g. the sweater unraveled.
+            41. _verb_ become undone. e.g. the sweater unraveled.
             **hypernym**: disintegrate
             **verb group**: ladder, run
             **synonyms**:
@@ -1407,7 +1409,7 @@ mod tests {
             .map(|w| dict.all_info(w).unwrap().len())
             .sum::<usize>();
         let expected = expect![[r#"
-            57947477
+            54641063
         "#]];
         expected.assert_debug_eq(&len);
     }
@@ -1423,20 +1425,8 @@ mod tests {
 
             **Synonyms**: axe
 
-            **ax** _verb_
-            1. chop or split with an ax. e.g. axe wood.
-            2. terminate. e.g. The NSF axed the research program and stopped funding it.
-
-            **Synonyms**: axe
-
             **axe** _noun_
             1. an edge tool with a heavy bladed head mounted across a handle.
-
-            **Synonyms**: ax
-
-            **axe** _verb_
-            1. chop or split with an ax. e.g. axe wood.
-            2. terminate. e.g. The NSF axed the research program and stopped funding it.
 
             **Synonyms**: ax
 
@@ -1448,7 +1438,19 @@ mod tests {
             5. the 2nd cervical vertebra; serves as a pivot for turning the head.
             6. the center around which something rotates.
 
-            **Synonyms**: Axis, axis of rotation, axis vertebra, bloc"#]];
+            **Synonyms**: Axis, axis of rotation, axis vertebra, bloc
+
+            **ax** _verb_
+            1. chop or split with an ax. e.g. axe wood.
+            2. terminate. e.g. The NSF axed the research program and stopped funding it.
+
+            **Synonyms**: axe
+
+            **axe** _verb_
+            1. chop or split with an ax. e.g. axe wood.
+            2. terminate. e.g. The NSF axed the research program and stopped funding it.
+
+            **Synonyms**: ax"#]];
         expected.assert_eq(&hover);
     }
 
@@ -1501,32 +1503,12 @@ mod tests {
             **synonyms**:
             - axe
 
-            2. _verb_ chop or split with an ax. e.g. axe wood.
-            **hypernym**: chop, hack
-            **synonyms**:
-            - axe
-
-            3. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
-            **hypernym**: end, terminate
-            **synonyms**:
-            - axe
-
             # axe
 
             1. _noun_ an edge tool with a heavy bladed head mounted across a handle.
             **hypernym**: edge_tool
             **hyponym**: Dayton_ax, Dayton_axe, Western_ax, Western_axe, broadax, broadaxe, common_ax, common_axe, double-bitted_ax, double-bitted_axe, fireman's_ax, fireman's_axe, hatchet, ice_ax, ice_axe, piolet, poleax, poleaxe
             **part meronym**: ax_handle, ax_head, axe_handle, axe_head, blade, haft, helve
-            **synonyms**:
-            - ax
-
-            2. _verb_ chop or split with an ax. e.g. axe wood.
-            **hypernym**: chop, hack
-            **synonyms**:
-            - ax
-
-            3. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
-            **hypernym**: end, terminate
             **synonyms**:
             - ax
 
@@ -1562,7 +1544,31 @@ mod tests {
             **hypernym**: mechanism
             **hyponym**: pin, pivot, rotor_head, rotor_shaft
             **synonyms**:
-            - axis_of_rotation"#]];
+            - axis_of_rotation
+
+            # ax
+
+            1. _verb_ chop or split with an ax. e.g. axe wood.
+            **hypernym**: chop, hack
+            **synonyms**:
+            - axe
+
+            2. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
+            **hypernym**: end, terminate
+            **synonyms**:
+            - axe
+
+            # axe
+
+            1. _verb_ chop or split with an ax. e.g. axe wood.
+            **hypernym**: chop, hack
+            **synonyms**:
+            - ax
+
+            2. _verb_ terminate. e.g. The NSF axed the research program and stopped funding it.
+            **hypernym**: end, terminate
+            **synonyms**:
+            - ax"#]];
         expected.assert_eq(&info);
     }
 

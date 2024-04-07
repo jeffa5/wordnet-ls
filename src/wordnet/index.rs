@@ -1,6 +1,6 @@
 use memmap::Mmap;
 
-use super::pos::PartOfSpeech;
+use super::pos::{PartOfSpeech, PartsOfSpeech};
 use super::utils;
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -32,19 +32,8 @@ impl Index {
         Index { files, mmaps }
     }
 
-    pub fn load(&self, word: &str, pos: Option<PartOfSpeech>) -> Vec<IndexItem> {
-        let mut items = Vec::new();
-
-        let poses = pos
-            .map(|p| vec![p])
-            .unwrap_or_else(|| PartOfSpeech::variants().to_vec());
-        for pos in poses {
-            if let Some(i) = self.search(pos, word) {
-                items.push(i)
-            }
-        }
-
-        items
+    pub fn load(&self, word: &str) -> PartsOfSpeech<Option<IndexItem>> {
+        PartsOfSpeech::with(|pos| self.search(pos, word))
     }
 
     pub fn contains(&self, word: &str, pos: PartOfSpeech) -> bool {

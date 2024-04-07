@@ -16,17 +16,18 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let wndir = std::env::var("WNSEARCHDIR").unwrap();
             let wn = WordNet::new(&PathBuf::from(wndir));
-            let words = wn
-                .all_words()
-                .into_iter()
-                .map(|w| {
-                    let synsets = wn.synsets(&w);
-                    synsets
-                        .iter()
-                        .map(|ss| ss.with_relationship(SemanticRelation::Cause).len())
-                        .sum::<usize>()
-                })
-                .sum::<usize>();
+            let words = wn.all_words().into_iter().map(move |w| {
+                let synsets = wn.synsets(&w);
+                synsets
+                    .iter()
+                    .map(|synsets| {
+                        synsets
+                            .iter()
+                            .map(|ss| ss.with_relationship(SemanticRelation::Cause).len())
+                            .sum::<usize>()
+                    })
+                    .sum::<usize>()
+            });
             black_box(words)
         })
     });

@@ -74,6 +74,17 @@ pub struct PartsOfSpeech<T> {
     pub adverb: T,
 }
 
+impl<T: std::fmt::Debug> std::fmt::Debug for PartsOfSpeech<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PartsOfSpeech")
+            .field("noun", &self.noun)
+            .field("verb", &self.verb)
+            .field("adjective", &self.adjective)
+            .field("adverb", &self.adverb)
+            .finish()
+    }
+}
+
 impl<T> PartsOfSpeech<T> {
     pub fn with(mut f: impl FnMut(PartOfSpeech) -> T) -> Self {
         Self {
@@ -106,5 +117,18 @@ impl<T> PartsOfSpeech<T> {
         f(PartOfSpeech::Verb, self.verb);
         f(PartOfSpeech::Adjective, self.adjective);
         f(PartOfSpeech::Adverb, self.adverb);
+    }
+
+    pub fn get(&self, pos: PartOfSpeech) -> &T {
+        match pos {
+            PartOfSpeech::Noun => &self.noun,
+            PartOfSpeech::Verb => &self.verb,
+            PartOfSpeech::Adjective => &self.adjective,
+            PartOfSpeech::Adverb => &self.adverb,
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        [&self.noun, &self.verb, &self.adjective, &self.adverb].into_iter()
     }
 }
