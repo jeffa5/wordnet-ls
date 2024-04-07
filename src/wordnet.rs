@@ -33,6 +33,12 @@ impl WordNet {
         }
     }
 
+    pub fn contains(&self, word: &str) -> bool {
+        PartOfSpeech::variants()
+            .into_iter()
+            .any(|pos| self.index.contains(word, pos))
+    }
+
     /// Directly resolve a reference, this should only be used with part_of_speech, offset pairs
     /// from the returned results, such as the relationships in synsets.
     pub fn resolve(&self, part_of_speech: PartOfSpeech, offset: u64) -> Option<SynSet> {

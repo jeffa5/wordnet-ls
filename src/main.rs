@@ -404,6 +404,7 @@ impl Server {
                             let words = self.get_word_from_document(&tdp);
                             let completion_items = words
                                 .into_iter()
+                                .filter(|w| self.dict.wordnet.contains(w))
                                 .map(|w| {
                                     lsp_types::CodeActionOrCommand::Command(lsp_types::Command {
                                         title: format!("Define {w:?}"),
