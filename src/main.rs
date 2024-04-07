@@ -317,7 +317,7 @@ impl Server {
                             {
                                 Some(word) => {
                                     let limit = 100;
-                                    let completion_items = self.complete(&word, limit);
+                                    let completion_items = self.dict.complete(&word, limit);
                                     let resp =
                                         lsp_types::CompletionResponse::List(CompletionList {
                                             is_incomplete: completion_items.len() == limit,
@@ -556,26 +556,6 @@ impl Server {
             tdp.position.line as usize,
             tdp.position.character as usize,
         )
-    }
-
-    fn complete(&self, word: &String, limit: usize) -> Vec<CompletionItem> {
-        let start = match self.dict.all_words.binary_search(word) {
-            Ok(v) => v,
-            Err(v) => v,
-        };
-        let matched_words = self
-            .dict
-            .all_words
-            .iter()
-            .skip(start)
-            .filter(|w| w.starts_with(word))
-            .take(limit);
-        matched_words
-            .map(|mw| CompletionItem {
-                label: mw.clone(),
-                ..Default::default()
-            })
-            .collect()
     }
 }
 
@@ -891,6 +871,29 @@ impl Dict {
             })
         });
         Some(content.trim().to_owned())
+    }
+
+    fn complete(&self, word: &String, limit: usize) -> Vec<CompletionItem> {
+        let start = match self.all_words.binary_search(word) {
+            Ok(v) => v,
+            Err(v) => v,
+        };
+        let matched_words = self
+            .all_words
+            .iter()
+            .skip(start)
+            .filter(|w| w.starts_with(word))
+            .take(limit);
+        matched_words
+            .map(|mw| {
+                let insert_text = mw.replace('_', " ");
+                CompletionItem {
+                    label: mw.clone(),
+                    insert_text: (mw != &insert_text).then_some(insert_text),
+                    ..Default::default()
+                }
+            })
+            .collect()
     }
 }
 
@@ -3375,6 +3378,15 @@ mod tests {
                 ),
             ]
         "#]];
+        expected.assert_debug_eq(&words);
+    }
+
+    #[test]
+    fn complete_spaces() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let words = dict.complete(&"living".to_owned(), 10);
+        let expected = expect![];
         expected.assert_debug_eq(&words);
     }
 }
