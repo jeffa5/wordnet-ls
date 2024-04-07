@@ -101,7 +101,7 @@ impl WordNet {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, path::PathBuf};
+    use std::{collections::BTreeMap, env, path::PathBuf};
 
     use super::*;
     use expect_test::expect;
@@ -5728,6 +5728,61 @@ mod tests {
             .sum::<usize>();
         let expected = expect![[r#"
             466
+        "#]];
+        expected.assert_debug_eq(&words);
+    }
+
+    #[test]
+    fn underscore_counts() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let wn = WordNet::new(&PathBuf::from(wndir));
+        let words = wn
+            .all_words()
+            .into_iter()
+            .map(|w| (w.chars().filter(|c| *c == '_').count(), w))
+            .fold(BTreeMap::new(), |mut acc, (c, w)| {
+                acc.entry(c).or_insert((0, w)).0 += 1;
+                acc
+            });
+        let expected = expect![[r#"
+            {
+                0: (
+                    83118,
+                    "'hood",
+                ),
+                1: (
+                    54533,
+                    "'s_gravenhage",
+                ),
+                2: (
+                    7766,
+                    "15_august_1945",
+                ),
+                3: (
+                    1454,
+                    "1st_earl_of_balfour",
+                ),
+                4: (
+                    298,
+                    "1st_earl_baldwin_of_bewdley",
+                ),
+                5: (
+                    80,
+                    "academy_of_television_arts_and_sciences",
+                ),
+                6: (
+                    28,
+                    "abu_ali_al-husain_ibn_abdallah_ibn_sina",
+                ),
+                7: (
+                    20,
+                    "armenian_secret_army_for_the_liberation_of_armenia",
+                ),
+                8: (
+                    9,
+                    "american_federation_of_labor_and_congress_of_industrial_organizations",
+                ),
+            }
         "#]];
         expected.assert_debug_eq(&words);
     }
