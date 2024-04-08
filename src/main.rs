@@ -302,14 +302,10 @@ impl Server {
                             .unwrap();
 
                             tdp.position.character -= 1;
-                            let response = match self
-                                .get_words_from_document(&tdp)
-                                .into_iter()
-                                .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
-                            {
+                            let response = match self.get_words_from_document(&tdp).first() {
                                 Some(word) => {
                                     let limit = 100;
-                                    let completion_items = self.dict.complete(&word, limit);
+                                    let completion_items = self.dict.complete(word, limit);
                                     let resp =
                                         lsp_types::CompletionResponse::List(CompletionList {
                                             is_incomplete: completion_items.len() == limit,
