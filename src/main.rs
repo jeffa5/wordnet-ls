@@ -235,40 +235,32 @@ impl Server {
                                 )
                                 .unwrap();
 
-                            let response = match self
+                            let words = self
                                 .get_words_from_document(&tdp)
                                 .into_iter()
-                                .find(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
-                            {
-                                Some(w) => {
-                                    if let Some(text) = self.dict.hover(&w) {
-                                        let resp = lsp_types::Hover {
-                                            contents: lsp_types::HoverContents::Markup(
-                                                lsp_types::MarkupContent {
-                                                    kind: lsp_types::MarkupKind::Markdown,
-                                                    value: text,
-                                                },
-                                            ),
-                                            range: None,
-                                        };
-                                        Message::Response(Response {
-                                            id: r.id,
-                                            result: Some(serde_json::to_value(resp).unwrap()),
-                                            error: None,
-                                        })
-                                    } else {
-                                        Message::Response(Response {
-                                            id: r.id,
-                                            result: None,
-                                            error: None,
-                                        })
-                                    }
-                                }
-                                None => Message::Response(Response {
+                                .filter(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
+                                .collect::<Vec<_>>();
+                            let response = if let Some(text) = self.dict.hover(&words) {
+                                let resp = lsp_types::Hover {
+                                    contents: lsp_types::HoverContents::Markup(
+                                        lsp_types::MarkupContent {
+                                            kind: lsp_types::MarkupKind::Markdown,
+                                            value: text,
+                                        },
+                                    ),
+                                    range: None,
+                                };
+                                Message::Response(Response {
+                                    id: r.id,
+                                    result: Some(serde_json::to_value(resp).unwrap()),
+                                    error: None,
+                                })
+                            } else {
+                                Message::Response(Response {
                                     id: r.id,
                                     result: None,
                                     error: None,
-                                }),
+                                })
                             };
 
                             c.sender.send(response).unwrap()
@@ -343,7 +335,7 @@ impl Server {
                                 serde_json::from_value::<lsp_types::CompletionItem>(r.params)
                                     .unwrap();
 
-                            let response = if let Some(doc) = self.dict.hover(&ci.label) {
+                            let response = if let Some(doc) = self.dict.hover(&[ci.label.clone()]) {
                                 ci.documentation = Some(lsp_types::Documentation::MarkupContent(
                                     lsp_types::MarkupContent {
                                         kind: lsp_types::MarkupKind::Markdown,
@@ -671,12 +663,21 @@ impl Dict {
         }
     }
 
-    fn hover(&self, word: &str) -> Option<String> {
-        let lemmas = self.wordnet.lemmatize(word);
+    fn hover(&self, words: &[String]) -> Option<String> {
+        let first_word = words.first()?;
+        let lemmas = self.wordnet.lemmatize(first_word);
         if lemmas.all(|w| w.is_empty()) {
             return None;
         }
         let mut content = String::new();
+        if words.len() > 1 {
+            writeln!(
+                content,
+                "View full definition for: {}\n",
+                words[1..].join(", ")
+            )
+            .unwrap();
+        }
         lemmas.for_each(|pos, lemmas| {
             lemmas.into_iter().for_each(|lemma| {
                 let synsets = self.wordnet.synsets_for(&lemma, pos);
@@ -922,7 +923,7 @@ mod tests {
     fn hover_woman() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let hover = dict.hover("woman").unwrap();
+        let hover = dict.hover(&["woman".to_owned()]).unwrap();
         let expected = expect![[r#"
             **woman** _noun_
             1. an adult female person (as opposed to a man). e.g. the woman kept house while the man hunted.
@@ -978,7 +979,7 @@ mod tests {
     fn hover_run() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let hover = dict.hover("run").unwrap();
+        let hover = dict.hover(&["run".to_owned()]).unwrap();
         let expected = expect![[r#"
             **run** _noun_
             1. a score in baseball made by a runner touching all four bases safely. e.g. the Yankees scored 3 runs in the bottom of the 9th; their first tally came in the 3rd inning.
@@ -1439,7 +1440,7 @@ mod tests {
     fn hover_axes() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let hover = dict.hover("axes").unwrap();
+        let hover = dict.hover(&["axes".to_owned()]).unwrap();
         let expected = expect![[r#"
             **ax** _noun_
             1. an edge tool with a heavy bladed head mounted across a handle.
@@ -1479,7 +1480,7 @@ mod tests {
     fn hover_is() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let hover = dict.hover("is").unwrap();
+        let hover = dict.hover(&["is".to_owned()]).unwrap();
         let expected = expect![[r#"
             **i** _noun_
             1. a nonmetallic element belonging to the halogens; used especially in medicine and photography and in dyes; occurs naturally only in combination in small quantities (as in sea water or rocks).
@@ -1506,6 +1507,49 @@ mod tests {
             **synonyms**: comprise, constitute, cost, embody, equal, exist, follow, live, make up, personify, represent
 
             **antonyms**: differ"#]];
+        expected.assert_eq(&hover);
+    }
+
+    #[test]
+    fn hover_multiple_words() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let hover = dict
+            .hover(&["living".to_owned(), "living_thing".to_owned()])
+            .unwrap();
+        let expected = expect![[r#"
+            View full definition for: living_thing
+
+            **living** _noun_
+            1. the experience of being alive; the course of human events and activities. e.g. he could no longer cope with the complexities of life.
+            2. people who are still living. e.g. save your pity for the living.
+            3. the condition of living or the state of being alive. e.g. while there's life there's hope; life depends on many chemical and physical processes.
+            4. the financial means whereby one lives. e.g. each child was expected to pay for their keep; he applied to the state for support; he could no longer earn his own livelihood.
+
+            **synonyms**: aliveness, animation, bread and butter, keep, life, livelihood, support, sustenance
+
+            **antonyms**: dead
+
+            **live** _verb_
+            1. inhabit or live in; be an inhabitant of. e.g. People lived in Africa millions of years ago; The people inhabited the islands that are now deserted; this kind of fish dwells near the bottom of the ocean; deer are populating the woods.
+            2. lead a certain kind of life; live in a certain style. e.g. we had to live frugally after the war.
+            3. continue to live through hardship or adversity. e.g. We went without water and food for 3 days; These superstitions survive in the backwaters of America; The race car driver lived through several very serious accidents; how long can a person last without food and water?.
+            4. support oneself. e.g. he could barely exist on such a low wage; Can you live on $2000 a month in New York City?; Many people in the world have to subsist on $1 a day.
+            5. have life, be alive. e.g. Our great leader is no more; My grandfather lived until the end of war.
+            6. have firsthand knowledge of states, situations, emotions, or sensations. e.g. I know the feeling!; have you ever known hunger?; I have lived a kind of hell when I was a drug addict; The holocaust survivors have lived a nightmare; I lived through two divorces.
+            7. pursue a positive and satisfying existence. e.g. You must accept yourself and others if you really want to live.
+
+            **synonyms**: be, dwell, endure, exist, experience, go, hold out, hold up, inhabit, know, last, live on, populate, subsist, survive
+
+            **living** _adjective_
+            1. pertaining to living persons. e.g. within living memory.
+            2. true to life; lifelike. e.g. the living image of her mother.
+            3. (informal) absolute. e.g. she is a living doll; scared the living daylights out of them; beat the living hell out of him.
+            4. still in existence. e.g. the Wollemi pine found in Australia is a surviving specimen of a conifer thought to have been long extinct and therefore known as a living fossil; the only surviving frontier blockhouse in Pennsylvania.
+            5. still in active use. e.g. a living language.
+            6. (used of minerals or stone) in its natural state and place; not mined or quarried.
+
+            **synonyms**: living(a), surviving"#]];
         expected.assert_eq(&hover);
     }
 
