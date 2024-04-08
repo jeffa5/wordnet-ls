@@ -865,7 +865,8 @@ impl Dict {
                             .join("\n");
 
                         if !lemma_relationships_str.is_empty() {
-                            writeln!(content, "- **synonyms**:\n{lemma_relationships_str}").unwrap();
+                            writeln!(content, "- **synonyms**:\n{lemma_relationships_str}")
+                                .unwrap();
                         }
                     }
                     writeln!(content).unwrap();
