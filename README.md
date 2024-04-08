@@ -2,14 +2,13 @@
 
 _This is beta software, use at your own risk_
 
-Language servers provide a convenient solution to the problem of language
-support for various editors.
+Language servers provide a convenient solution to the problem of language support for various editors.
 
-Language servers are commonly used for programming languages but why not
-natural language too?
+Language servers are commonly used for programming languages but why not natural language too?
 
-This project aims to provide an example of a language server for English, using
-wordnet for support.
+This project aims to provide an example of a language server for English, using wordnet for support.
+
+![](./definition.png)
 
 ## Actions
 
