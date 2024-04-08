@@ -721,6 +721,7 @@ impl Dict {
                 blocks.push(s);
             }
 
+            let mut relations = Vec::new();
             let mut synonyms = ss_pos
                 .iter()
                 .flat_map(|ss| ss.synonyms())
@@ -734,7 +735,7 @@ impl Dict {
                     .map(|x| x.replace('_', " "))
                     .collect::<Vec<String>>()
                     .join(", ");
-                blocks.push(format!("**synonyms**: {syns}"));
+                relations.push(format!("- **synonyms**: {syns}"));
             }
 
             let mut antonyms = ss_pos
@@ -750,7 +751,11 @@ impl Dict {
                     .map(|x| x.replace('_', " "))
                     .collect::<Vec<String>>()
                     .join(", ");
-                blocks.push(format!("**antonyms**: {ants}"));
+                relations.push(format!("- **antonyms**: {ants}"));
+            }
+
+            if !relations.is_empty() {
+                blocks.push(relations.join("\n"));
             }
         }
 
@@ -931,9 +936,8 @@ mod tests {
             3. a human female employed to do housework. e.g. the char will clean the carpet; I have a woman who comes in four hours a day while I write.
             4. women as a class. e.g. it's an insult to American womanhood; woman is the glory of creation; the fair sex gathered on the veranda.
 
-            **synonyms**: adult female, char, charwoman, cleaning lady, cleaning woman, fair sex, womanhood
-
-            **antonyms**: man"#]];
+            - **synonyms**: adult female, char, charwoman, cleaning lady, cleaning woman, fair sex, womanhood
+            - **antonyms**: man"#]];
         expected.assert_eq(&hover);
     }
 
@@ -999,7 +1003,7 @@ mod tests {
             15. an unbroken chronological sequence. e.g. the play had a long run on Broadway; the team enjoyed a brief run of victories.
             16. a short trip. e.g. take a run into town.
 
-            **synonyms**: campaign, discharge, foot race, footrace, ladder, outpouring, political campaign, ravel, rill, rivulet, runnel, running, running game, running play, streak, streamlet, tally, test, trial
+            - **synonyms**: campaign, discharge, foot race, footrace, ladder, outpouring, political campaign, ravel, rill, rivulet, runnel, running, running game, running play, streak, streamlet, tally, test, trial
 
             **run** _verb_
             1. move fast by using one's feet, with one foot off the ground at any given time. e.g. Don't run--you'll be out of breath; The children ran to the store.
@@ -1044,9 +1048,8 @@ mod tests {
             40. come unraveled or undone as if by snagging. e.g. Her nylons were running.
             41. become undone. e.g. the sweater unraveled.
 
-            **synonyms**: be given, black market, bleed, break away, bunk, campaign, carry, consort, course, die hard, draw, endure, escape, execute, extend, feed, flow, fly the coop, function, go, guide, head for the hills, hightail it, hunt, hunt down, incline, ladder, lam, lead, lean, melt, melt down, move, operate, pass, persist, play, ply, prevail, race, range, run away, run for, scarper, scat, take to the woods, tend, track down, turn tail, unravel, work
-
-            **antonyms**: idle, malfunction"#]];
+            - **synonyms**: be given, black market, bleed, break away, bunk, campaign, carry, consort, course, die hard, draw, endure, escape, execute, extend, feed, flow, fly the coop, function, go, guide, head for the hills, hightail it, hunt, hunt down, incline, ladder, lam, lead, lean, melt, melt down, move, operate, pass, persist, play, ply, prevail, race, range, run away, run for, scarper, scat, take to the woods, tend, track down, turn tail, unravel, work
+            - **antonyms**: idle, malfunction"#]];
         expected.assert_eq(&hover);
     }
 
@@ -1445,12 +1448,12 @@ mod tests {
             **ax** _noun_
             1. an edge tool with a heavy bladed head mounted across a handle.
 
-            **synonyms**: axe
+            - **synonyms**: axe
 
             **axe** _noun_
             1. an edge tool with a heavy bladed head mounted across a handle.
 
-            **synonyms**: ax
+            - **synonyms**: ax
 
             **axis** _noun_
             1. a straight line through a body or figure that satisfies certain conditions.
@@ -1460,19 +1463,19 @@ mod tests {
             5. the 2nd cervical vertebra; serves as a pivot for turning the head.
             6. the center around which something rotates.
 
-            **synonyms**: Axis, axis of rotation, axis vertebra, bloc
+            - **synonyms**: Axis, axis of rotation, axis vertebra, bloc
 
             **ax** _verb_
             1. chop or split with an ax. e.g. axe wood.
             2. terminate. e.g. The NSF axed the research program and stopped funding it.
 
-            **synonyms**: axe
+            - **synonyms**: axe
 
             **axe** _verb_
             1. chop or split with an ax. e.g. axe wood.
             2. terminate. e.g. The NSF axed the research program and stopped funding it.
 
-            **synonyms**: ax"#]];
+            - **synonyms**: ax"#]];
         expected.assert_eq(&hover);
     }
 
@@ -1487,7 +1490,7 @@ mod tests {
             2. the smallest whole number or a numeral representing this number. e.g. he has the one but will need a two and three to go with it; they had lunch at one.
             3. the 9th letter of the Roman alphabet.
 
-            **synonyms**: 1, I, ace, atomic number 53, iodin, iodine, one, single, unity
+            - **synonyms**: 1, I, ace, atomic number 53, iodin, iodine, one, single, unity
 
             **be** _verb_
             1. have the quality of being; (copula, used with an adjective or a predicate noun). e.g. John is rich; This is not a good answer.
@@ -1504,9 +1507,8 @@ mod tests {
             12. to remain unmolested, undisturbed, or uninterrupted -- used only in infinitive form. e.g. let her be.
             13. be priced at. e.g. These shoes cost $100.
 
-            **synonyms**: comprise, constitute, cost, embody, equal, exist, follow, live, make up, personify, represent
-
-            **antonyms**: differ"#]];
+            - **synonyms**: comprise, constitute, cost, embody, equal, exist, follow, live, make up, personify, represent
+            - **antonyms**: differ"#]];
         expected.assert_eq(&hover);
     }
 
@@ -1526,9 +1528,8 @@ mod tests {
             3. the condition of living or the state of being alive. e.g. while there's life there's hope; life depends on many chemical and physical processes.
             4. the financial means whereby one lives. e.g. each child was expected to pay for their keep; he applied to the state for support; he could no longer earn his own livelihood.
 
-            **synonyms**: aliveness, animation, bread and butter, keep, life, livelihood, support, sustenance
-
-            **antonyms**: dead
+            - **synonyms**: aliveness, animation, bread and butter, keep, life, livelihood, support, sustenance
+            - **antonyms**: dead
 
             **live** _verb_
             1. inhabit or live in; be an inhabitant of. e.g. People lived in Africa millions of years ago; The people inhabited the islands that are now deserted; this kind of fish dwells near the bottom of the ocean; deer are populating the woods.
@@ -1539,7 +1540,7 @@ mod tests {
             6. have firsthand knowledge of states, situations, emotions, or sensations. e.g. I know the feeling!; have you ever known hunger?; I have lived a kind of hell when I was a drug addict; The holocaust survivors have lived a nightmare; I lived through two divorces.
             7. pursue a positive and satisfying existence. e.g. You must accept yourself and others if you really want to live.
 
-            **synonyms**: be, dwell, endure, exist, experience, go, hold out, hold up, inhabit, know, last, live on, populate, subsist, survive
+            - **synonyms**: be, dwell, endure, exist, experience, go, hold out, hold up, inhabit, know, last, live on, populate, subsist, survive
 
             **living** _adjective_
             1. pertaining to living persons. e.g. within living memory.
@@ -1549,7 +1550,7 @@ mod tests {
             5. still in active use. e.g. a living language.
             6. (used of minerals or stone) in its natural state and place; not mined or quarried.
 
-            **synonyms**: living(a), surviving"#]];
+            - **synonyms**: living(a), surviving"#]];
         expected.assert_eq(&hover);
     }
 
