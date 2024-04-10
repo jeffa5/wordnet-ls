@@ -1,9 +1,4 @@
 use clap::Parser;
-use wordnet_ls::wordnet::LexicalRelation;
-use wordnet_ls::wordnet::PartOfSpeech;
-use wordnet_ls::wordnet::SemanticRelation;
-use wordnet_ls::wordnet::SynSet;
-use wordnet_ls::wordnet::WordNet;
 use lsp_server::ErrorCode;
 use lsp_server::Message;
 use lsp_server::Notification;
@@ -41,6 +36,11 @@ use std::fs::File;
 use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
+use wordnet_ls::wordnet::LexicalRelation;
+use wordnet_ls::wordnet::PartOfSpeech;
+use wordnet_ls::wordnet::SemanticRelation;
+use wordnet_ls::wordnet::SynSet;
+use wordnet_ls::wordnet::WordNet;
 
 #[derive(Debug, Clone, Parser)]
 struct Args {

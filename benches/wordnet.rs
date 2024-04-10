@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::path::PathBuf;
 use wordnet_ls::wordnet::SemanticRelation;
 use wordnet_ls::wordnet::WordNet;
-use std::path::PathBuf;
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("all_words", |b| {
