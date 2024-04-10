@@ -1,12 +1,8 @@
-# LLS - Language Language-Server
+# Wordnet language server
 
-_This is beta software, use at your own risk_
+A tool to explore language as you write, where you write.
 
-Language servers provide a convenient solution to the problem of language support for various editors.
-
-Language servers are commonly used for programming languages but why not natural language too?
-
-This project aims to provide an example of a language server for English, using wordnet for support.
+It currently supports English, using the [WordNet](https://wordnet.princeton.edu/) database.
 
 ![](./definition.png)
 
@@ -21,13 +17,21 @@ This project aims to provide an example of a language server for English, using 
 
 ### Cargo
 
-Currently, the main way to install LLS is by cloning the repo and running
+Currently, the main way to install wordnet-ls is by cloning the repo and running
 
 ```sh
-cargo install --path . --force
+cargo install --force wordnet-ls
 ```
 
-This adds the binary `lls` to the rust bin location.
+This adds the binary `wordnet-ls` to the rust bin location.
+
+### Nix
+
+You can also get it on nix, using the flake in this repo:
+
+```sh
+nix shell github:jeffa5/wordnet-ls
+```
 
 ## Configuration
 
@@ -44,7 +48,7 @@ To configure the location of the wordnet dictionary set the `initializationOptio
 
 Home dir (`~`) should get expanded if needed.
 
-Capabilities are all enabled by default, but can be disabled in the `initializationOptions` (e.g. to prevent conflicting handling of hover or gotoDefinition):
+Capabilities are all enabled by default, but can be disabled in the `initializationOptions` (e.g. to prevent conflicting handling of `hover` or `gotoDefinition`):
 
 ```json
 {
@@ -59,13 +63,14 @@ Capabilities are all enabled by default, but can be disabled in the `initializat
 ### Neovim
 
 For debugging and quickly adding it to neovim you can use the provided `vim.lua` file, provided you have `nvim-lspconfig`.
+Just make sure to run `cargo build` and enter `nvim` from the root of this repo.
 
 ```sh
-nvim LLS.txt
+nvim test.txt
 # then :LspStop
 # then :luafile vim.lua
 # then :LspStart
-# Write some words and hit K to hover one using LLS
+# Write some words and hit K to hover one
 ```
 
 It by default is set up for the `text` and `markdown` filetypes.

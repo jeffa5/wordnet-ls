@@ -1,9 +1,9 @@
 use clap::Parser;
-use lls_lib::wordnet::LexicalRelation;
-use lls_lib::wordnet::PartOfSpeech;
-use lls_lib::wordnet::SemanticRelation;
-use lls_lib::wordnet::SynSet;
-use lls_lib::wordnet::WordNet;
+use wordnet_ls::wordnet::LexicalRelation;
+use wordnet_ls::wordnet::PartOfSpeech;
+use wordnet_ls::wordnet::SemanticRelation;
+use wordnet_ls::wordnet::SynSet;
+use wordnet_ls::wordnet::WordNet;
 use lsp_server::ErrorCode;
 use lsp_server::Message;
 use lsp_server::Notification;
@@ -142,7 +142,7 @@ fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) 
     let init_result = InitializeResult {
         capabilities: caps,
         server_info: Some(ServerInfo {
-            name: "lls".to_owned(),
+            name: "wordnet-ls".to_owned(),
             version: None,
         }),
     };
@@ -760,7 +760,7 @@ impl Dict {
 
     fn all_info_file(&self, words: &[String]) -> Option<PathBuf> {
         let info = self.all_info(words)?;
-        let filename = PathBuf::from(format!("/tmp/lls-{}.md", words[0]));
+        let filename = PathBuf::from(format!("/tmp/wordnet-ls-{}.md", words[0]));
         let mut file = File::create(&filename).unwrap();
         file.write_all(info.as_bytes()).unwrap();
         Some(filename)

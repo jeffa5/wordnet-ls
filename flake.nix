@@ -11,7 +11,10 @@
     pkgs = nixpkgs.legacyPackages.${system};
     cargoNix = pkgs.callPackage ./Cargo.nix {};
   in {
-    packages.${system}.lls = cargoNix.rootCrate.build;
+    packages.${system} = {
+      wordnet-ls = cargoNix.rootCrate.build;
+      default = self.packages.${system}.wordnet-ls;
+    };
 
     formatter.${system} = pkgs.alejandra;
 

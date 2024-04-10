@@ -1,27 +1,27 @@
 -- with lspconfig
 --
-if require('lspconfig.configs').lls ~= nil then
-  require('lspconfig.configs').lls = nil
+if require('lspconfig.configs').wordnet ~= nil then
+  require('lspconfig.configs').wordnet = nil
 end
 
-require('lspconfig.configs').llsdev = {
+require('lspconfig.configs').wordnet_dev = {
   default_config = {
-    cmd = { 'target/debug/lls', '--stdio' },
+    cmd = { 'target/debug/wordnet-ls', '--stdio' },
     filetypes = { 'text', 'markdown' },
     root_dir = function(_)
       return '/'
     end,
   },
 }
-require('lspconfig').llsdev.setup {
+require('lspconfig').wordnet_dev.setup {
   init_options = { wordnet = os.getenv("WNSEARCHDIR") },
 }
 
 -- or without lspconfig
 --
 -- vim.lsp.start({
---   name = 'lls',
---   cmd = { 'target/debug/lls' },
+--   name = 'wordnet-ls',
+--   cmd = { 'target/debug/wordnet-ls' },
 --   root_dir = '.',
 --   init_options = { wordnet = os.getenv("WNSEARCHDIR") },
 -- })

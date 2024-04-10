@@ -31,7 +31,7 @@ rec {
   #
 
   rootCrate = rec {
-    packageId = "lls";
+    packageId = "wordnet-ls";
 
     # Use this attribute to refer to the derivation building your root crate package.
     # You can override the features with rootCrate.build.override { features = [ "default" "feature1" ... ]; }.
@@ -47,10 +47,10 @@ rec {
   # You can override the features with
   # workspaceMembers."${crateName}".build.override { features = [ "default" "feature1" ... ]; }.
   workspaceMembers = {
-    "lls" = rec {
-      packageId = "lls";
+    "wordnet-ls" = rec {
+      packageId = "wordnet-ls";
       build = internal.buildRustCrateWithFeatures {
-        packageId = "lls";
+        packageId = "wordnet-ls";
       };
 
       # Debug support which might change between releases.
@@ -1066,86 +1066,6 @@ rec {
           "redox_syscall" = [ "dep:redox_syscall" ];
         };
         resolvedDefaultFeatures = [ "call" "std" ];
-      };
-      "lls" = rec {
-        crateName = "lls";
-        version = "0.1.0";
-        edition = "2021";
-        crateBin = [
-          {
-            name = "lls";
-            path = "src/main.rs";
-            requiredFeatures = [ ];
-          }
-        ];
-        # We can't filter paths with references in Nix 2.4
-        # See https://github.com/NixOS/nix/issues/5410
-        src = if ((lib.versionOlder builtins.nixVersion "2.4pre20211007") || (lib.versionOlder "2.5" builtins.nixVersion ))
-          then lib.cleanSourceWith { filter = sourceFilter;  src = ./.; }
-          else ./.;
-        libName = "lls_lib";
-        authors = [
-          "Jeffas <dev@jeffas.io>"
-        ];
-        dependencies = [
-          {
-            name = "clap";
-            packageId = "clap";
-            features = [ "derive" ];
-          }
-          {
-            name = "dirs";
-            packageId = "dirs";
-          }
-          {
-            name = "hex";
-            packageId = "hex";
-          }
-          {
-            name = "lsp-server";
-            packageId = "lsp-server";
-          }
-          {
-            name = "lsp-types";
-            packageId = "lsp-types";
-          }
-          {
-            name = "memmap";
-            packageId = "memmap";
-          }
-          {
-            name = "rayon";
-            packageId = "rayon";
-          }
-          {
-            name = "regex";
-            packageId = "regex";
-          }
-          {
-            name = "serde";
-            packageId = "serde";
-            features = [ "derive" ];
-          }
-          {
-            name = "serde_json";
-            packageId = "serde_json";
-          }
-          {
-            name = "thiserror";
-            packageId = "thiserror";
-          }
-        ];
-        devDependencies = [
-          {
-            name = "criterion";
-            packageId = "criterion";
-          }
-          {
-            name = "expect-test";
-            packageId = "expect-test";
-          }
-        ];
-
       };
       "log" = rec {
         crateName = "log";
@@ -3616,6 +3536,85 @@ rec {
         sha256 = "1n0yc7xiv9iki1j3xl8nxlwwkr7dzsnwwvycvgxxv81d5bjm5drj";
         authors = [
           "Microsoft"
+        ];
+
+      };
+      "wordnet-ls" = rec {
+        crateName = "wordnet-ls";
+        version = "0.1.0";
+        edition = "2021";
+        crateBin = [
+          {
+            name = "wordnet-ls";
+            path = "src/main.rs";
+            requiredFeatures = [ ];
+          }
+        ];
+        # We can't filter paths with references in Nix 2.4
+        # See https://github.com/NixOS/nix/issues/5410
+        src = if ((lib.versionOlder builtins.nixVersion "2.4pre20211007") || (lib.versionOlder "2.5" builtins.nixVersion ))
+          then lib.cleanSourceWith { filter = sourceFilter;  src = ./.; }
+          else ./.;
+        authors = [
+          "Jeffas <dev@jeffas.net>"
+        ];
+        dependencies = [
+          {
+            name = "clap";
+            packageId = "clap";
+            features = [ "derive" ];
+          }
+          {
+            name = "dirs";
+            packageId = "dirs";
+          }
+          {
+            name = "hex";
+            packageId = "hex";
+          }
+          {
+            name = "lsp-server";
+            packageId = "lsp-server";
+          }
+          {
+            name = "lsp-types";
+            packageId = "lsp-types";
+          }
+          {
+            name = "memmap";
+            packageId = "memmap";
+          }
+          {
+            name = "rayon";
+            packageId = "rayon";
+          }
+          {
+            name = "regex";
+            packageId = "regex";
+          }
+          {
+            name = "serde";
+            packageId = "serde";
+            features = [ "derive" ];
+          }
+          {
+            name = "serde_json";
+            packageId = "serde_json";
+          }
+          {
+            name = "thiserror";
+            packageId = "thiserror";
+          }
+        ];
+        devDependencies = [
+          {
+            name = "criterion";
+            packageId = "criterion";
+          }
+          {
+            name = "expect-test";
+            packageId = "expect-test";
+          }
         ];
 
       };
