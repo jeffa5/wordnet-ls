@@ -1130,6 +1130,10 @@ rec {
             name = "serde_json";
             packageId = "serde_json";
           }
+          {
+            name = "thiserror";
+            packageId = "thiserror";
+          }
         ];
         devDependencies = [
           {
