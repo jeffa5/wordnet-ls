@@ -1,4 +1,5 @@
 use super::pos::PartOfSpeech;
+use super::pos::PartsOfSpeech;
 use super::relation::LexicalRelation;
 use super::relation::SemanticRelation;
 use super::synset::Lemma;
@@ -6,45 +7,33 @@ use super::synset::LexicalRelationship;
 use super::synset::SemanticRelationship;
 use super::synset::SynSet;
 use memmap::Mmap;
-use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufRead as _;
 use std::path::Path;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Data {
-    #[allow(dead_code)]
-    files: BTreeMap<PartOfSpeech, File>,
-    mmaps: BTreeMap<PartOfSpeech, Mmap>,
+    maps: PartsOfSpeech<Mmap>,
 }
 
 impl Data {
-    pub fn new(dir: &Path) -> Self {
-        let mut files = BTreeMap::new();
-        let mut mmaps = BTreeMap::new();
-        for pos in PartOfSpeech::iter() {
-            let file = Self::get_file(dir, pos);
-            mmaps.insert(pos, unsafe { Mmap::map(&file).unwrap() });
-            files.insert(pos, file);
-        }
-        Self { files, mmaps }
+    pub fn new(dir: &Path) -> std::io::Result<Self> {
+        let maps = PartsOfSpeech::try_with(|pos| unsafe { Mmap::map(&Self::get_file(dir, pos)?) })?;
+        Ok(Self { maps })
     }
 
     /// Load a synset from the given offset in a particular part of speech file.
     pub(super) fn load(&self, offset: u64, pos: PartOfSpeech) -> Option<SynSet> {
-        // do a binary search later
-        // for now just linear
-        let map = self.mmaps.get(&pos)?;
-
+        let map = self.maps.get(pos);
         let mut line = String::new();
         (&map[offset as usize..]).read_line(&mut line).unwrap();
 
         Some(SynSet::from_parts(line.split_whitespace()).unwrap())
     }
 
-    fn get_file(dir: &Path, pos: PartOfSpeech) -> File {
+    fn get_file(dir: &Path, pos: PartOfSpeech) -> std::io::Result<File> {
         let p = dir.join("data").with_extension(pos.as_suffix());
-        File::open(p).unwrap()
+        File::open(p)
     }
 }
 

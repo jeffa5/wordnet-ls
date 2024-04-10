@@ -1,39 +1,28 @@
 // https://wordnet.princeton.edu/documentation/morphy7wn
 
-use std::{collections::BTreeMap, fs::File, path::Path};
+use std::{fs::File, path::Path};
 
 use memmap::Mmap;
 
-use super::{index::Index, utils, PartOfSpeech};
+use super::{index::Index, pos::PartsOfSpeech, utils, PartOfSpeech};
 
 pub struct Lemmatizer {
-    #[allow(dead_code)]
-    exceptions: BTreeMap<PartOfSpeech, File>,
-    maps: BTreeMap<PartOfSpeech, Mmap>,
+    maps: PartsOfSpeech<Mmap>,
 }
 
 impl Lemmatizer {
-    pub fn new(dir: &Path) -> Self {
-        let mut exception_files = BTreeMap::new();
-        let mut maps = BTreeMap::new();
-        for pos in PartOfSpeech::variants() {
-            let file = Self::get_file(dir, pos);
-            maps.insert(pos, unsafe { Mmap::map(&file).unwrap() });
-            exception_files.insert(pos, file);
-        }
-        Self {
-            exceptions: exception_files,
-            maps,
-        }
+    pub fn new(dir: &Path) -> std::io::Result<Self> {
+        let maps = PartsOfSpeech::try_with(|pos| unsafe { Mmap::map(&Self::get_file(dir, pos)?) })?;
+        Ok(Self { maps })
     }
 
-    fn get_file(dir: &Path, pos: PartOfSpeech) -> File {
+    fn get_file(dir: &Path, pos: PartOfSpeech) -> std::io::Result<File> {
         let p = dir.join(pos.as_suffix()).with_extension("exc");
-        File::open(p).unwrap()
+        File::open(p)
     }
 
     fn exceptions_for(&self, index: &Index, word: &str, pos: PartOfSpeech) -> Vec<String> {
-        let map = self.maps.get(&pos).unwrap();
+        let map = self.maps.get(pos);
         let mut results = Vec::new();
         if let Some(line) = utils::binary_search_file(map, word) {
             let base_forms = line.split_whitespace().skip(1);
@@ -174,8 +163,8 @@ mod tests {
 
     fn check(word: &str, pos: PartOfSpeech, expected: Expect) {
         let wndir = PathBuf::from(env::var("WNSEARCHDIR").unwrap());
-        let index = Index::new(&wndir);
-        let lemmatizer = Lemmatizer::new(&wndir);
+        let index = Index::new(&wndir).unwrap();
+        let lemmatizer = Lemmatizer::new(&wndir).unwrap();
         let shortened = lemmatizer.lemmatize(word, pos, &index);
         expected.assert_debug_eq(&shortened);
     }

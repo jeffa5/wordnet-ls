@@ -95,6 +95,15 @@ impl<T> PartsOfSpeech<T> {
         }
     }
 
+    pub fn try_with<E>(mut f: impl FnMut(PartOfSpeech) -> Result<T, E>) -> Result<Self, E> {
+        Ok(Self {
+            noun: f(PartOfSpeech::Noun)?,
+            verb: f(PartOfSpeech::Verb)?,
+            adjective: f(PartOfSpeech::Adjective)?,
+            adverb: f(PartOfSpeech::Adverb)?,
+        })
+    }
+
     pub fn any(&self, mut f: impl FnMut(&T) -> bool) -> bool {
         f(&self.noun) || f(&self.verb) || f(&self.adjective) || f(&self.adverb)
     }

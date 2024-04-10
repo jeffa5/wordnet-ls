@@ -2,16 +2,13 @@ use memmap::Mmap;
 
 use super::pos::{PartOfSpeech, PartsOfSpeech};
 use super::utils;
-use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::BufRead;
 use std::path::Path;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Index {
-    #[allow(dead_code)]
-    files: BTreeMap<PartOfSpeech, File>,
-    mmaps: BTreeMap<PartOfSpeech, Mmap>,
+    maps: PartsOfSpeech<Mmap>,
 }
 
 #[derive(Debug)]
@@ -21,15 +18,9 @@ pub struct IndexItem {
 }
 
 impl Index {
-    pub fn new(dir: &Path) -> Self {
-        let mut files = BTreeMap::new();
-        let mut mmaps = BTreeMap::new();
-        for pos in PartOfSpeech::iter() {
-            let file = Self::get_file(dir, pos);
-            mmaps.insert(pos, unsafe { Mmap::map(&file).unwrap() });
-            files.insert(pos, file);
-        }
-        Index { files, mmaps }
+    pub fn new(dir: &Path) -> std::io::Result<Self> {
+        let maps = PartsOfSpeech::try_with(|pos| unsafe { Mmap::map(&Self::get_file(dir, pos)?) })?;
+        Ok(Index { maps })
     }
 
     pub fn load(&self, word: &str) -> PartsOfSpeech<Option<IndexItem>> {
@@ -40,20 +31,19 @@ impl Index {
         self.search(pos, word).is_some()
     }
 
-    fn get_file(dir: &Path, pos: PartOfSpeech) -> File {
+    fn get_file(dir: &Path, pos: PartOfSpeech) -> std::io::Result<File> {
         let p = dir.join("index").with_extension(pos.as_suffix());
-        File::open(p).unwrap()
+        File::open(p)
     }
 
     fn search(&self, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
-        let map = self.mmaps.get(&pos)?;
-
+        let map = self.maps.get(pos);
         let line = utils::binary_search_file(map, word)?;
         IndexItem::from_parts(line.split_whitespace())
     }
 
     pub fn words_for(&self, pos: PartOfSpeech) -> Vec<String> {
-        let map = self.mmaps.get(&pos).unwrap();
+        let map = self.maps.get(pos);
         let mut results = Vec::new();
         for l in map.lines() {
             match l {

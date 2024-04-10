@@ -7,7 +7,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("all_words", |b| {
         b.iter(|| {
             let wndir = std::env::var("WNSEARCHDIR").unwrap();
-            let wn = WordNet::new(&PathBuf::from(wndir));
+            let wn = WordNet::new(&PathBuf::from(wndir)).unwrap();
             let len = wn.all_words().len();
             black_box(len)
         })
@@ -15,7 +15,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("all_words_cause", |b| {
         b.iter(|| {
             let wndir = std::env::var("WNSEARCHDIR").unwrap();
-            let wn = WordNet::new(&PathBuf::from(wndir));
+            let wn = WordNet::new(&PathBuf::from(wndir)).unwrap();
             let words = wn.all_words().into_iter().map(move |w| {
                 let synsets = wn.synsets(&w);
                 synsets

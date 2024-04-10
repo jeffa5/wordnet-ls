@@ -75,7 +75,8 @@ impl Lemma {
             .map(|r| {
                 (
                     r.target,
-                    wn.resolve(r.part_of_speech, r.synset_offset).unwrap(),
+                    wn.resolve(r.part_of_speech, r.synset_offset)
+                        .expect("Failed to resolve word from lemma relationship"),
                 )
             })
             .map(|(target, mut ss)| ss.lemmas.remove(target).word)

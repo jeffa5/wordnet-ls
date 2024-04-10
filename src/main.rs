@@ -651,7 +651,7 @@ struct Dict {
 
 impl Dict {
     fn new(value: &Path) -> Self {
-        let wn = WordNet::new(value);
+        let wn = WordNet::new(value).unwrap();
         let all_words = wn.all_words();
         Self {
             wordnet: wn,
@@ -1891,7 +1891,7 @@ mod tests {
     #[test]
     fn get_words_all_punctuations() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
-        let wn = WordNet::new(&PathBuf::from(wndir));
+        let wn = WordNet::new(&PathBuf::from(wndir)).unwrap();
         let words = wn
             .all_words()
             .into_iter()
