@@ -5,6 +5,7 @@ use rayon::prelude::*;
 pub use relation::LexicalRelation;
 pub use relation::SemanticRelation;
 use std::path::Path;
+use std::path::PathBuf;
 pub use synset::SynSet;
 
 use self::lemmatize::Lemmatizer;
@@ -18,6 +19,18 @@ mod relation;
 mod synset;
 mod utils;
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Failed to perform IO operation on path {path:?}: {error}")]
+    IO {
+        path: PathBuf,
+        error: std::io::Error,
+    },
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug)]
 pub struct WordNet {
     index: Index,
     data: Data,
@@ -25,11 +38,20 @@ pub struct WordNet {
 }
 
 impl WordNet {
-    pub fn new(dir: &Path) -> std::io::Result<Self> {
+    pub fn new(dir: &Path) -> Result<Self> {
         Ok(Self {
-            index: Index::new(dir)?,
-            data: Data::new(dir)?,
-            lemmatizer: Lemmatizer::new(dir)?,
+            index: Index::new(dir).map_err(|e| Error::IO {
+                path: dir.to_owned(),
+                error: e,
+            })?,
+            data: Data::new(dir).map_err(|e| Error::IO {
+                path: dir.to_owned(),
+                error: e,
+            })?,
+            lemmatizer: Lemmatizer::new(dir).map_err(|e| Error::IO {
+                path: dir.to_owned(),
+                error: e,
+            })?,
         })
     }
 
@@ -154783,5 +154805,12 @@ mod tests {
             }
         "#]];
         expected.assert_debug_eq(&words);
+    }
+
+    #[test]
+    fn missing_dir() {
+        let wn = WordNet::new(&PathBuf::from("/"));
+        let expected = expect![];
+        expected.assert_debug_eq(&wn);
     }
 }

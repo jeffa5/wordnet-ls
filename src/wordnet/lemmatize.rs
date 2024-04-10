@@ -6,6 +6,7 @@ use memmap::Mmap;
 
 use super::{index::Index, pos::PartsOfSpeech, utils, PartOfSpeech};
 
+#[derive(Debug)]
 pub struct Lemmatizer {
     maps: PartsOfSpeech<Mmap>,
 }
