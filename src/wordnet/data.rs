@@ -26,9 +26,9 @@ impl Data {
     pub(super) fn load(&self, offset: u64, pos: PartOfSpeech) -> Option<SynSet> {
         let map = self.maps.get(pos);
         let mut line = String::new();
-        (&map[offset as usize..]).read_line(&mut line).unwrap();
+        (&map[offset as usize..]).read_line(&mut line).ok()?;
 
-        Some(SynSet::from_parts(line.split_whitespace()).unwrap())
+        SynSet::from_parts(line.split_whitespace())
     }
 
     fn get_file(dir: &Path, pos: PartOfSpeech) -> std::io::Result<File> {
@@ -42,9 +42,9 @@ impl SynSet {
         let _synset_offset = ps.next()?;
         let _lex_filenum = ps.next()?;
         let ss_type = ps.next()?;
-        let part_of_speech = PartOfSpeech::try_from_str(ss_type).unwrap();
+        let part_of_speech = PartOfSpeech::try_from_str(ss_type)?;
         let w_cnt = ps.next()?;
-        let mut w_cnt = usize::from_str_radix(w_cnt, 16).unwrap();
+        let mut w_cnt = usize::from_str_radix(w_cnt, 16).ok()?;
 
         let mut lemmas = Vec::new();
         while w_cnt > 0 {
@@ -59,7 +59,7 @@ impl SynSet {
         }
 
         let p_cnt = ps.next()?;
-        let mut p_cnt = p_cnt.parse::<usize>().unwrap();
+        let mut p_cnt = p_cnt.parse::<usize>().ok()?;
 
         let mut relationships = Vec::new();
         while p_cnt > 0 {
@@ -67,22 +67,22 @@ impl SynSet {
 
             let pointer_symbol = ps.next()?;
             let synset_offset = ps.next()?;
-            let synset_offset = synset_offset.parse::<u64>().unwrap();
+            let synset_offset = synset_offset.parse::<u64>().ok()?;
             let part_of_speech = ps.next()?;
-            let part_of_speech = PartOfSpeech::try_from_str(part_of_speech).unwrap();
+            let part_of_speech = PartOfSpeech::try_from_str(part_of_speech)?;
             let source_target = ps.next()?;
             if source_target == "0000" {
-                let pointer_type = SemanticRelation::try_from_str(pointer_symbol).unwrap();
+                let pointer_type = SemanticRelation::try_from_str(pointer_symbol)?;
                 relationships.push(SemanticRelationship {
                     relation: pointer_type,
                     synset_offset,
                     part_of_speech,
                 });
             } else {
-                let pointer_type = LexicalRelation::try_from_str(pointer_symbol).unwrap();
+                let pointer_type = LexicalRelation::try_from_str(pointer_symbol)?;
                 let (source, target) = source_target.split_at(2);
-                let source = usize::from_str_radix(source, 16).unwrap();
-                let target = usize::from_str_radix(target, 16).unwrap();
+                let source = usize::from_str_radix(source, 16).ok()?;
+                let target = usize::from_str_radix(target, 16).ok()?;
                 lemmas[source - 1].relationships.push(LexicalRelationship {
                     relation: pointer_type,
                     synset_offset,

@@ -39,7 +39,7 @@ impl Index {
     fn search(&self, pos: PartOfSpeech, word: &str) -> Option<IndexItem> {
         let map = self.maps.get(pos);
         let line = utils::binary_search_file(map, word)?;
-        IndexItem::from_parts(line.split_whitespace())
+        IndexItem::try_from_parts(line.split_whitespace())
     }
 
     pub fn words_for(&self, pos: PartOfSpeech) -> Vec<String> {
@@ -69,19 +69,20 @@ impl Index {
 }
 
 impl IndexItem {
-    pub fn from_parts<'a>(mut ps: impl Iterator<Item = &'a str>) -> Option<Self> {
+    pub fn try_from_parts<'a>(mut ps: impl Iterator<Item = &'a str>) -> Option<Self> {
         // line example: computer n 2 7 @ ~ #p %p + ; - 2 1 03082979 09887034
         let _lemma = ps.next()?;
         let pos = ps.next()?;
         let _synset_cnt = ps.next()?;
         let p_cnt = ps.next()?;
-        let p_cnt = p_cnt.parse::<usize>().unwrap();
+        let p_cnt = p_cnt.parse::<usize>().ok()?;
         let mut ps = ps.skip(p_cnt);
         let _sens_cnt = ps.next()?;
         let _tagsense_cnt = ps.next()?;
-        let syn_offsets = ps.map(|x| x.parse().unwrap()).collect();
+        let syn_offsets: Option<Vec<_>> = ps.map(|x| x.parse().ok()).collect();
+        let syn_offsets = syn_offsets?;
         Some(Self {
-            pos: PartOfSpeech::try_from_str(pos).unwrap(),
+            pos: PartOfSpeech::try_from_str(pos)?,
             syn_offsets,
         })
     }
