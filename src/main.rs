@@ -305,7 +305,11 @@ impl Server {
                             let response = match self.get_words_from_document(&tdp).first() {
                                 Some(word) => {
                                     let limit = 100;
-                                    let completion_items = self.dict.complete(word, limit);
+                                    let completion_items = self.dict.complete(
+                                        word,
+                                        word.chars().next().map_or(false, |c| c.is_uppercase()),
+                                        limit,
+                                    );
                                     let resp =
                                         lsp_types::CompletionResponse::List(CompletionList {
                                             is_incomplete: completion_items.len() == limit,
@@ -876,7 +880,7 @@ impl Dict {
         Some(content.trim().to_owned())
     }
 
-    fn complete(&self, word: &String, limit: usize) -> Vec<CompletionItem> {
+    fn complete(&self, word: &String, capitalise: bool, limit: usize) -> Vec<CompletionItem> {
         let start = match self.all_words.binary_search(word) {
             Ok(v) => v,
             Err(v) => v,
@@ -889,7 +893,12 @@ impl Dict {
             .take(limit);
         matched_words
             .map(|mw| {
-                let insert_text = mw.replace('_', " ");
+                let mut insert_text = mw.replace('_', " ");
+                if capitalise {
+                    let mut chars = insert_text.chars().collect::<Vec<_>>();
+                    chars[0] = chars[0].to_ascii_uppercase();
+                    insert_text = chars.into_iter().collect();
+                }
                 CompletionItem {
                     label: mw.clone(),
                     insert_text: (mw != &insert_text).then_some(insert_text),
@@ -3427,7 +3436,7 @@ mod tests {
     fn complete_spaces() {
         let wndir = env::var("WNSEARCHDIR").unwrap();
         let dict = Dict::new(&PathBuf::from(wndir));
-        let words = dict.complete(&"living".to_owned(), 10);
+        let words = dict.complete(&"living".to_owned(), false, 10);
         let expected = expect![[r#"
             [
                 CompletionItem {
@@ -3636,6 +3645,238 @@ mod tests {
                     filter_text: None,
                     insert_text: Some(
                         "living room",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+            ]
+        "#]];
+        expected.assert_debug_eq(&words);
+    }
+
+    #[test]
+    fn complete_uppercase() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let words = dict.complete(&"bost".to_owned(), true, 10);
+        let expected = expect![[r#"
+            [
+                CompletionItem {
+                    label: "boston",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_baked_beans",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston baked beans",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_brown_bread",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston brown bread",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_bull",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston bull",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_cream_pie",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston cream pie",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_fern",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston fern",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_harbor",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston harbor",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_ivy",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston ivy",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_lettuce",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston lettuce",
+                    ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "boston_rocker",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: Some(
+                        "Boston rocker",
                     ),
                     insert_text_format: None,
                     insert_text_mode: None,
