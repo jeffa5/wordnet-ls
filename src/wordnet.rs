@@ -154810,7 +154810,18 @@ mod tests {
     #[test]
     fn missing_dir() {
         let wn = WordNet::new(&PathBuf::from("/"));
-        let expected = expect![];
+        let expected = expect![[r#"
+            Err(
+                IO {
+                    path: "/",
+                    error: Os {
+                        code: 2,
+                        kind: NotFound,
+                        message: "No such file or directory",
+                    },
+                },
+            )
+        "#]];
         expected.assert_debug_eq(&wn);
     }
 }
