@@ -238,6 +238,7 @@ impl Server {
                             let words = self
                                 .get_words_from_document(&tdp)
                                 .into_iter()
+                                .map(|w| w.to_lowercase())
                                 .filter(|w| self.dict.wordnet.lemmatize(w).any(|w| !w.is_empty()))
                                 .collect::<Vec<_>>();
                             let response = if let Some(text) = self.dict.hover(&words) {
@@ -273,6 +274,8 @@ impl Server {
                                 .unwrap();
 
                             let words = self.get_words_from_document(&tdp);
+                            let words: Vec<_> =
+                                words.into_iter().map(|w| w.to_lowercase()).collect();
                             let response = match self.dict.all_info_file(&words) {
                                 Some(filename) => {
                                     let resp =
@@ -305,8 +308,9 @@ impl Server {
                             let response = match self.get_words_from_document(&tdp).first() {
                                 Some(word) => {
                                     let limit = 100;
+                                    let lower_word = word.to_lowercase();
                                     let completion_items = self.dict.complete(
-                                        word,
+                                        &lower_word,
                                         word.chars().next().map_or(false, |c| c.is_uppercase()),
                                         limit,
                                     );
@@ -335,7 +339,8 @@ impl Server {
                                 serde_json::from_value::<lsp_types::CompletionItem>(r.params)
                                     .unwrap();
 
-                            let response = if let Some(doc) = self.dict.hover(&[ci.label.clone()]) {
+                            let lower_word = ci.label.to_lowercase();
+                            let response = if let Some(doc) = self.dict.hover(&[lower_word]) {
                                 ci.documentation = Some(lsp_types::Documentation::MarkupContent(
                                     lsp_types::MarkupContent {
                                         kind: lsp_types::MarkupKind::Markdown,
@@ -370,6 +375,7 @@ impl Server {
                             let words = self.get_words_from_document(&tdp);
                             let completion_items = words
                                 .into_iter()
+                                .map(|w| w.to_lowercase())
                                 .filter(|w| self.dict.wordnet.contains(w))
                                 .map(|w| {
                                     let args = serde_json::to_value(DefineCommandArguments {
@@ -601,9 +607,7 @@ fn get_word_from_line(line: &str, character: usize) -> Option<String> {
     let word_char = |match_with: &str, c: char| c.is_alphanumeric() || match_with.contains(c);
     for (i, c) in line.chars().enumerate() {
         if word_char(&match_chars, c) {
-            for c in c.to_lowercase() {
-                current_word.push(c);
-            }
+            current_word.push(c);
         } else {
             if found {
                 return Some(current_word);
@@ -893,15 +897,18 @@ impl Dict {
             .take(limit);
         matched_words
             .map(|mw| {
-                let mut insert_text = mw.replace('_', " ");
-                if capitalise {
-                    let mut chars = insert_text.chars().collect::<Vec<_>>();
+                let mw = if capitalise {
+                    let mut chars = mw.chars().collect::<Vec<_>>();
                     chars[0] = chars[0].to_ascii_uppercase();
-                    insert_text = chars.into_iter().collect();
-                }
+                    chars.into_iter().collect()
+                } else {
+                    mw.clone()
+                };
+                let insert_text = mw.replace('_', " ");
+                let insert_text = (mw != insert_text).then_some(insert_text);
                 CompletionItem {
-                    label: mw.clone(),
-                    insert_text: (mw != &insert_text).then_some(insert_text),
+                    label: mw,
+                    insert_text,
                     ..Default::default()
                 }
             })
@@ -3668,7 +3675,7 @@ mod tests {
         let expected = expect![[r#"
             [
                 CompletionItem {
-                    label: "boston",
+                    label: "Boston",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3677,9 +3684,7 @@ mod tests {
                     preselect: None,
                     sort_text: None,
                     filter_text: None,
-                    insert_text: Some(
-                        "Boston",
-                    ),
+                    insert_text: None,
                     insert_text_format: None,
                     insert_text_mode: None,
                     text_edit: None,
@@ -3690,7 +3695,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_baked_beans",
+                    label: "Boston_baked_beans",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3712,7 +3717,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_brown_bread",
+                    label: "Boston_brown_bread",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3734,7 +3739,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_bull",
+                    label: "Boston_bull",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3756,7 +3761,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_cream_pie",
+                    label: "Boston_cream_pie",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3778,7 +3783,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_fern",
+                    label: "Boston_fern",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3800,7 +3805,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_harbor",
+                    label: "Boston_harbor",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3822,7 +3827,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_ivy",
+                    label: "Boston_ivy",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3844,7 +3849,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_lettuce",
+                    label: "Boston_lettuce",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3866,7 +3871,7 @@ mod tests {
                     tags: None,
                 },
                 CompletionItem {
-                    label: "boston_rocker",
+                    label: "Boston_rocker",
                     label_details: None,
                     kind: None,
                     detail: None,
@@ -3878,6 +3883,58 @@ mod tests {
                     insert_text: Some(
                         "Boston rocker",
                     ),
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+            ]
+        "#]];
+        expected.assert_debug_eq(&words);
+    }
+
+    #[test]
+    fn complete_capital() {
+        let wndir = env::var("WNSEARCHDIR").unwrap();
+        let dict = Dict::new(&PathBuf::from(wndir));
+        let words = dict.complete(&"liv".to_owned(), true, 2);
+        let expected = expect![[r#"
+            [
+                CompletionItem {
+                    label: "Liv",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: None,
+                    insert_text_format: None,
+                    insert_text_mode: None,
+                    text_edit: None,
+                    additional_text_edits: None,
+                    command: None,
+                    commit_characters: None,
+                    data: None,
+                    tags: None,
+                },
+                CompletionItem {
+                    label: "Livable",
+                    label_details: None,
+                    kind: None,
+                    detail: None,
+                    documentation: None,
+                    deprecated: None,
+                    preselect: None,
+                    sort_text: None,
+                    filter_text: None,
+                    insert_text: None,
                     insert_text_format: None,
                     insert_text_mode: None,
                     text_edit: None,
