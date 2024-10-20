@@ -917,12 +917,21 @@ impl Dict {
 }
 
 fn resolve_position(content: &str, pos: Position) -> usize {
-    let count = content
-        .lines()
-        .map(|l| l.len())
-        .take(pos.line as usize)
-        .sum::<usize>();
-    pos.line as usize + count + pos.character as usize
+    let mut count = 0;
+    let mut lines = 0;
+    let mut character = 0;
+    for c in content.chars() {
+        count += 1;
+        character += 1;
+        if c == '\n' {
+            lines += 1;
+            character = 0;
+        }
+        if lines >= pos.line && character >= pos.character {
+            break;
+        }
+    }
+    count
 }
 
 #[derive(Debug, Serialize, Deserialize)]
