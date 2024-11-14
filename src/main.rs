@@ -17,7 +17,6 @@ use lsp_types::ExecuteCommandOptions;
 use lsp_types::InitializeParams;
 use lsp_types::InitializeResult;
 use lsp_types::Location;
-use lsp_types::Position;
 use lsp_types::PositionEncodingKind;
 use lsp_types::Range;
 use lsp_types::ServerCapabilities;
@@ -36,6 +35,7 @@ use std::fs::File;
 use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
+use wordnet_ls::open_files::OpenFiles;
 use wordnet_ls::wordnet::LexicalRelation;
 use wordnet_ls::wordnet::PartOfSpeech;
 use wordnet_ls::wordnet::SemanticRelation;
@@ -155,7 +155,7 @@ fn connect(stdio: bool) -> (lsp_types::InitializeParams, Connection, IoThreads) 
 
 struct Server {
     dict: Dict,
-    open_files: BTreeMap<String, String>,
+    open_files: OpenFiles,
     shutdown: bool,
 }
 
@@ -202,7 +202,7 @@ impl Server {
         };
         Self {
             dict: Dict::new(&wordnet_location),
-            open_files: BTreeMap::new(),
+            open_files: OpenFiles::default(),
             shutdown: false,
         }
     }
@@ -478,7 +478,7 @@ impl Server {
                                 lsp_types::DidOpenTextDocumentParams,
                             >(n.params)
                             .unwrap();
-                            self.open_files.insert(
+                            self.open_files.add(
                                 dotdp.text_document.uri.to_string(),
                                 dotdp.text_document.text,
                             );
@@ -496,17 +496,7 @@ impl Server {
                             >(n.params)
                             .unwrap();
                             let doc = dctdp.text_document.uri.to_string();
-                            let content = self.open_files.get_mut(&doc).unwrap();
-                            for change in dctdp.content_changes {
-                                if let Some(range) = change.range {
-                                    let start = resolve_position(content, range.start);
-                                    let end = resolve_position(content, range.end);
-                                    content.replace_range(start..end, &change.text);
-                                } else {
-                                    // full content replace
-                                    *content = change.text;
-                                }
-                            }
+                            self.open_files.apply_changes(&doc, dctdp.content_changes);
                             // log(&c, format!("got change document notification for {doc:?}"))
                         }
                         lsp_types::notification::DidCloseTextDocument::METHOD => {
@@ -514,7 +504,7 @@ impl Server {
                                 lsp_types::DidCloseTextDocumentParams,
                             >(n.params)
                             .unwrap();
-                            self.open_files.remove(&dctdp.text_document.uri.to_string());
+                            self.open_files.remove(dctdp.text_document.uri.as_ref());
                             // log(
                             //     &c,
                             //     format!(
@@ -539,18 +529,13 @@ impl Server {
         }
     }
 
-    fn get_file_content(&self, uri: &Url) -> String {
-        if let Some(content) = self.open_files.get(&uri.to_string()) {
-            content.to_owned()
-        } else {
-            std::fs::read_to_string(uri.to_file_path().unwrap()).unwrap()
-        }
-    }
-
-    fn get_words_from_document(&self, tdp: &lsp_types::TextDocumentPositionParams) -> Vec<String> {
-        let content = self.get_file_content(&tdp.text_document.uri);
+    fn get_words_from_document(
+        &mut self,
+        tdp: &lsp_types::TextDocumentPositionParams,
+    ) -> Vec<String> {
+        let content = self.open_files.get(tdp.text_document.uri.as_ref());
         get_words_from_content(
-            &content,
+            content,
             tdp.position.line as usize,
             tdp.position.character as usize,
         )
@@ -914,24 +899,6 @@ impl Dict {
             })
             .collect()
     }
-}
-
-fn resolve_position(content: &str, pos: Position) -> usize {
-    let mut count = 0;
-    let mut lines = 0;
-    let mut character = 0;
-    for c in content.chars() {
-        count += 1;
-        character += 1;
-        if c == '\n' {
-            lines += 1;
-            character = 0;
-        }
-        if lines >= pos.line && character >= pos.character {
-            break;
-        }
-    }
-    count
 }
 
 #[derive(Debug, Serialize, Deserialize)]
