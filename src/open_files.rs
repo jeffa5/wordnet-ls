@@ -32,12 +32,13 @@ impl OpenFiles {
                 let end = resolve_position(content, range.end);
                 assert!(
                     start <= end,
-                    "start {:?} {}, end {:?} {} content len: {}",
+                    "start {:?} {}, end {:?} {} content len: {} {:?}",
                     range.start,
                     start,
                     range.end,
                     end,
                     content.len(),
+                    content,
                 );
                 content.replace_range(start..end, &change.text);
             } else {
