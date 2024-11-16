@@ -58,15 +58,83 @@ fn resolve_position(content: &str, pos: Position) -> usize {
     let mut lines = 0;
     let mut character = 0;
     for c in content.chars() {
-        count += 1;
-        character += 1;
-        if c == '\n' {
-            lines += 1;
-            character = 0;
-        }
         if lines >= pos.line && character >= pos.character {
             break;
         }
+        if c == '\n' {
+            lines += 1;
+            character = 0;
+        } else {
+            character += 1;
+        }
+        count += 1;
     }
     count
+}
+
+#[cfg(test)]
+mod tests {
+    use lsp_types::Range;
+
+    use super::*;
+
+    #[test]
+    fn changes() {
+        let mut files = OpenFiles::default();
+        files.add("test".to_owned(), "".to_owned());
+        files.apply_changes(
+            "test",
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                }),
+                range_length: None,
+                text: "foo\n".to_owned(),
+            }],
+        );
+        assert_eq!(files.get("test"), "foo\n");
+        files.apply_changes(
+            "test",
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 1,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        character: 0,
+                    },
+                }),
+                range_length: None,
+                text: "bar".to_owned(),
+            }],
+        );
+        assert_eq!(files.get("test"), "foo\nbar");
+        files.apply_changes(
+            "test",
+            vec![TextDocumentContentChangeEvent {
+                range: Some(Range {
+                    start: Position {
+                        line: 1,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 1,
+                        character: 0,
+                    },
+                }),
+                range_length: None,
+                text: "\n".to_owned(),
+            }],
+        );
+        assert_eq!(files.get("test"), "foo\n\nbar");
+    }
 }
